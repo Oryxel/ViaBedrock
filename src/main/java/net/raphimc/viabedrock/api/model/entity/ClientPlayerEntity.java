@@ -100,6 +100,7 @@ public class ClientPlayerEntity extends PlayerEntity {
         System.out.println(type);
         ByteBuf buffer = Unpooled.buffer();
         try {
+            // SELECTED ITEM seems to be wrong, TODO: fix that?
             BedrockTypes.VAR_INT.write(buffer, 1); // legacy request id
             BedrockTypes.UNSIGNED_VAR_INT.write(buffer, 3); // transaction type
             BedrockTypes.UNSIGNED_VAR_LONG.write(buffer, 0L);

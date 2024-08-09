@@ -353,6 +353,8 @@ public class EntityPackets {
             }
             final int data = wrapper.read(BedrockTypes.VAR_INT); // data
 
+            Entity entity = entityTracker.getEntityByRid(runtimeEntityId);
+
             switch (event) {
                 case DEATH -> {
                     if (runtimeEntityId == entityTracker.getClientPlayer().runtimeId()) {
@@ -365,6 +367,20 @@ public class EntityPackets {
                             playerCombatKill.write(Types.TAG, TextUtil.textComponentToNbt(gameSession.getDeathMessage())); // message
                             playerCombatKill.send(BedrockProtocol.class);
                         }
+                    }
+                }
+                case HURT -> {
+                    if (entity != null) {
+                        final PacketWrapper damageEvent = PacketWrapper.create(ClientboundPackets1_21.DAMAGE_EVENT, wrapper.user());
+                        damageEvent.write(Types.VAR_INT, entity.javaId());
+
+                        // TODO: implement this properly
+                        damageEvent.write(Types.VAR_INT, 0);
+                        damageEvent.write(Types.VAR_INT, 0);
+                        damageEvent.write(Types.VAR_INT, 0);
+                        damageEvent.write(Types.BOOLEAN, false);
+
+                        damageEvent.send(BedrockProtocol.class);
                     }
                 }
                 default -> {

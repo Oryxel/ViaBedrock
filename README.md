@@ -3,6 +3,9 @@ ViaVersion addon to add support for Minecraft: Bedrock Edition servers.
 
 ViaBedrock aims to be as compatible and accurate as possible with the Minecraft: Bedrock Edition protocol.
 
+## About this fork
+Hi there! This fork is mainly to add my own stuff that is not prob going to be push onto mainstream (cuz there implement is pretty bad...)
+
 ## Usage
 **ViaBedrock is in very early stages of development and NOT intended for regular use yet.**
 
@@ -24,7 +27,7 @@ If you want to talk about ViaBedrock or learn more about it you can join my [Dis
 - [x] Biomes
 - [x] Player spawning
 - [x] Entity spawning
-- [ ] Entity interactions
+- [x] Entity interactions
 - [ ] Entity metadata
 - [x] Entity attributes
 - [ ] Entity mounting
