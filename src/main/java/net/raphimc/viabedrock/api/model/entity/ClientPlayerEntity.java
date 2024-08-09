@@ -176,16 +176,15 @@ public class ClientPlayerEntity extends PlayerEntity {
 
         ByteBuf buffer = Unpooled.buffer();
         try {
-            // SELECTED ITEM seems to be wrong, TODO: fix that?
-            BedrockTypes.VAR_INT.write(buffer, 1); // legacy request id
-            BedrockTypes.UNSIGNED_VAR_INT.write(buffer, 3); // transaction type
-            BedrockTypes.UNSIGNED_VAR_LONG.write(buffer, 0L);
+            BedrockTypes.VAR_INT.write(buffer, 0); // legacy request id
+            BedrockTypes.UNSIGNED_VAR_INT.write(buffer, 3); // transaction type (ITEM_USE_ON_ENTITY)
+            BedrockTypes.UNSIGNED_VAR_LONG.write(buffer, 0L); // inventory actions
             BedrockTypes.UNSIGNED_VAR_LONG.write(buffer, runtimeId); // runtime id
             BedrockTypes.UNSIGNED_VAR_INT.write(buffer, type); // action type
-            BedrockTypes.UNSIGNED_VAR_INT.write(buffer, selectedSlot); // selected slot
+            BedrockTypes.VAR_INT.write(buffer, selectedSlot); // selected slot
             itemType.write(buffer, item); // item
             BedrockTypes.POSITION_3F.write(buffer, position); // player position
-            BedrockTypes.POSITION_3F.write(buffer, new Position3f(0, 0, 0)); // click position (for touch user?)
+            BedrockTypes.POSITION_3F.write(buffer, new Position3f(0, 0, 0)); // click position (default, for touch user.)
 
             final PacketWrapper inventoryTransaction = PacketWrapper.create(ServerboundBedrockPackets.INVENTORY_TRANSACTION, buffer, this.user);
             inventoryTransaction.sendToServer(BedrockProtocol.class);
