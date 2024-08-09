@@ -1620,6 +1620,29 @@ public enum JavaSound {
         this.name = name;
     }
 
+    public int categoryFromName() {
+        int soundCategory = 0;
+        if (name.contains("music")) {
+            soundCategory = 1;
+        } else if (name.contains("weather")) {
+            soundCategory = 3;
+        } else if (name.contains("block")) {
+            soundCategory = 4;
+        } else if (name.contains("entity")) {
+            if (name.contains("player")) {
+                soundCategory = 5;
+            } else {
+                soundCategory = 6;
+            }
+        } else if (name.contains("player")) {
+            soundCategory = 7;
+        } else if (name.contains("ambient")) {
+            soundCategory = 8;
+        }
+
+        return soundCategory;
+    }
+
     public String getName() {
         return name;
     }

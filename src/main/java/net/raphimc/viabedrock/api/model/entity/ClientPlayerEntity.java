@@ -97,28 +97,9 @@ public class ClientPlayerEntity extends PlayerEntity {
 
         JavaSound sound = JavaSound.valueOf(javaSoundName.toUpperCase().replace(".", "_"));
 
-        int soundCategory = 0;
-        if (javaSoundName.contains("music")) {
-            soundCategory = 1;
-        } else if (javaSoundName.contains("weather")) {
-            soundCategory = 3;
-        } else if (javaSoundName.contains("block")) {
-            soundCategory = 4;
-        } else if (javaSoundName.contains("entity")) {
-            if (javaSoundName.contains("player")) {
-                soundCategory = 5;
-            } else {
-                soundCategory = 6;
-            }
-        } else if (javaSoundName.contains("player")) {
-            soundCategory = 7;
-        } else if (javaSoundName.contains("ambient")) {
-            soundCategory = 8;
-        }
-
         PacketWrapper soundPacket = PacketWrapper.create(ClientboundPackets1_21.SOUND, this.user);
         soundPacket.write(Types.VAR_INT, sound.ordinal() + 1);
-        soundPacket.write(Types.VAR_INT, soundCategory);
+        soundPacket.write(Types.VAR_INT, sound.categoryFromName());
         soundPacket.write(Types.INT, position.x());
         soundPacket.write(Types.INT, position.y());
         soundPacket.write(Types.INT, position.z());
@@ -135,28 +116,9 @@ public class ClientPlayerEntity extends PlayerEntity {
 
         JavaSound sound = JavaSound.valueOf(javaSoundName.toUpperCase().replace(".", "_"));
 
-        int soundCategory = 0;
-        if (javaSoundName.contains("music")) {
-            soundCategory = 1;
-        } else if (javaSoundName.contains("weather")) {
-            soundCategory = 3;
-        } else if (javaSoundName.contains("block")) {
-            soundCategory = 4;
-        } else if (javaSoundName.contains("entity")) {
-            if (javaSoundName.contains("player")) {
-                soundCategory = 5;
-            } else {
-                soundCategory = 6;
-            }
-        } else if (javaSoundName.contains("player")) {
-            soundCategory = 7;
-        } else if (javaSoundName.contains("ambient")) {
-            soundCategory = 8;
-        }
-
         PacketWrapper soundPacket = PacketWrapper.create(ClientboundPackets1_21.SOUND, this.user);
         soundPacket.write(Types.VAR_INT, sound.ordinal() + 1);
-        soundPacket.write(Types.VAR_INT, soundCategory);
+        soundPacket.write(Types.VAR_INT, sound.categoryFromName());
         soundPacket.write(Types.INT, (int) position.x() * 8);
         soundPacket.write(Types.INT, (int) position.y() * 8);
         soundPacket.write(Types.INT, (int) position.z() * 8);
