@@ -113,6 +113,9 @@ public class BedrockMappingData extends MappingDataBase {
     private BiMap<String, Integer> bedrockEffects;
     private Map<String, String> bedrockToJavaEffects;
 
+    // Sounds
+    private BiMap<String, String> bedrockToJavaSounds;
+
     // Other stuff
     private BiMap<String, String> bedrockToJavaExperimentalFeatures;
     private BiMap<String, String> bedrockToJavaBannerPatterns;
@@ -635,6 +638,18 @@ public class BedrockMappingData extends MappingDataBase {
                 this.bedrockToJavaPaintings.put(entry.getKey(), javaIdentifier);
             }
         }
+
+        { // Sounds
+            final JsonObject bedrockToJavaSoundMappingsJson = this.readJson("custom/sound_mappings.json");
+            this.bedrockToJavaSounds = HashBiMap.create(bedrockToJavaSoundMappingsJson.size());
+            for (Map.Entry<String, JsonElement> entry : bedrockToJavaSoundMappingsJson.entrySet()) {
+                this.bedrockToJavaSounds.put(entry.getKey(), entry.getValue().getAsString());
+            }
+        }
+    }
+
+    public BiMap<String, String> getBedrockToJavaSounds() {
+        return bedrockToJavaSounds;
     }
 
     public ResourcePack getBedrockVanillaResourcePack() {

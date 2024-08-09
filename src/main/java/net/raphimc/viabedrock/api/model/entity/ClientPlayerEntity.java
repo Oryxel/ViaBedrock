@@ -34,6 +34,7 @@ import net.raphimc.viabedrock.protocol.data.ProtocolConstants;
 import net.raphimc.viabedrock.protocol.data.enums.bedrock.*;
 import net.raphimc.viabedrock.protocol.data.enums.java.AbilitiesFlag;
 import net.raphimc.viabedrock.protocol.data.enums.java.GameMode;
+import net.raphimc.viabedrock.protocol.data.enums.java.JavaSound;
 import net.raphimc.viabedrock.protocol.model.*;
 import net.raphimc.viabedrock.protocol.rewriter.GameTypeRewriter;
 import net.raphimc.viabedrock.protocol.rewriter.ItemRewriter;
@@ -89,6 +90,82 @@ public class ClientPlayerEntity extends PlayerEntity {
         }
     }
 
+    public void playSound(String soundName, BlockPosition position, float volume, float pitch) {
+        String javaSoundName = BedrockProtocol.MAPPINGS.getBedrockToJavaSounds().get(soundName);
+        if (javaSoundName == null || javaSoundName.isEmpty())
+            return;
+
+        JavaSound sound = JavaSound.valueOf(javaSoundName.toUpperCase().replace(".", "_"));
+
+        int soundCategory = 0;
+        if (javaSoundName.contains("music")) {
+            soundCategory = 1;
+        } else if (javaSoundName.contains("weather")) {
+            soundCategory = 3;
+        } else if (javaSoundName.contains("block")) {
+            soundCategory = 4;
+        } else if (javaSoundName.contains("entity")) {
+            if (javaSoundName.contains("player")) {
+                soundCategory = 5;
+            } else {
+                soundCategory = 6;
+            }
+        } else if (javaSoundName.contains("player")) {
+            soundCategory = 7;
+        } else if (javaSoundName.contains("ambient")) {
+            soundCategory = 8;
+        }
+
+        PacketWrapper soundPacket = PacketWrapper.create(ClientboundPackets1_21.SOUND, this.user);
+        soundPacket.write(Types.VAR_INT, sound.ordinal() + 1);
+        soundPacket.write(Types.VAR_INT, soundCategory);
+        soundPacket.write(Types.INT, position.x());
+        soundPacket.write(Types.INT, position.y());
+        soundPacket.write(Types.INT, position.z());
+        soundPacket.write(Types.FLOAT, volume);
+        soundPacket.write(Types.FLOAT, pitch);
+        soundPacket.write(Types.LONG, 0L);
+        soundPacket.send(BedrockProtocol.class);
+    }
+
+    public void playLevelSound(SoundEvent event, Position3f position, String sourceIdentifier) {
+        String javaSoundName = BedrockProtocol.MAPPINGS.getBedrockToJavaSounds().get(sourceIdentifier + "." + event.name().toLowerCase());
+        if (javaSoundName == null || javaSoundName.isEmpty())
+            return;
+
+        JavaSound sound = JavaSound.valueOf(javaSoundName.toUpperCase().replace(".", "_"));
+
+        int soundCategory = 0;
+        if (javaSoundName.contains("music")) {
+            soundCategory = 1;
+        } else if (javaSoundName.contains("weather")) {
+            soundCategory = 3;
+        } else if (javaSoundName.contains("block")) {
+            soundCategory = 4;
+        } else if (javaSoundName.contains("entity")) {
+            if (javaSoundName.contains("player")) {
+                soundCategory = 5;
+            } else {
+                soundCategory = 6;
+            }
+        } else if (javaSoundName.contains("player")) {
+            soundCategory = 7;
+        } else if (javaSoundName.contains("ambient")) {
+            soundCategory = 8;
+        }
+
+        PacketWrapper soundPacket = PacketWrapper.create(ClientboundPackets1_21.SOUND, this.user);
+        soundPacket.write(Types.VAR_INT, sound.ordinal() + 1);
+        soundPacket.write(Types.VAR_INT, soundCategory);
+        soundPacket.write(Types.INT, (int) position.x() * 8);
+        soundPacket.write(Types.INT, (int) position.y() * 8);
+        soundPacket.write(Types.INT, (int) position.z() * 8);
+        soundPacket.write(Types.FLOAT, 1.0F);
+        soundPacket.write(Types.FLOAT, 1.0F);
+        soundPacket.write(Types.LONG, 0L);
+        soundPacket.send(BedrockProtocol.class);
+    }
+
     public void sendInteractPacketToServer(long runtimeId, int type) {
         final InventoryTracker tracker = this.user.get(InventoryTracker.class);
 
@@ -97,7 +174,6 @@ public class ClientPlayerEntity extends PlayerEntity {
 
         BedrockItemType itemType = (BedrockItemType) this.user.get(ItemRewriter.class).getItemType();
 
-        System.out.println(type);
         ByteBuf buffer = Unpooled.buffer();
         try {
             // SELECTED ITEM seems to be wrong, TODO: fix that?
