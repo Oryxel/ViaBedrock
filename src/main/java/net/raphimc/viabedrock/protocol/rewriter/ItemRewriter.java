@@ -130,6 +130,10 @@ public class ItemRewriter extends StoredObject {
         return rewriter.toJava(this.getUser(), bedrockItem);
     }
 
+    public Type<BedrockItem> getItemType() {
+        return itemType;
+    }
+
     public CompoundTag javaItem(final CompoundTag bedrockTag) {
         final CompoundTag javaTag = new CompoundTag();
         javaTag.putString("id", "minecraft:stone");

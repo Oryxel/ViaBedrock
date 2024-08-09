@@ -39,6 +39,7 @@ public class EntityTracker extends StoredObject {
     private final AtomicInteger ID_COUNTER = new AtomicInteger(1);
 
     private ClientPlayerEntity clientPlayerEntity = null;
+    private final Map<Integer, Long> javaIdToUniqueId = new HashMap<>();
     private final Map<Long, Long> runtimeIdToUniqueId = new HashMap<>();
     private final Map<Long, Entity> entities = new HashMap<>();
     private final Map<BlockPosition, Integer> itemFrames = new HashMap<>();
@@ -72,6 +73,9 @@ public class EntityTracker extends StoredObject {
         if (this.runtimeIdToUniqueId.putIfAbsent(entity.runtimeId(), entity.uniqueId()) != null) {
             ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "Duplicate runtime entity ID: " + entity.runtimeId());
         }
+
+        this.javaIdToUniqueId.put(entity.javaId(), entity.uniqueId());
+
         final Entity prevEntity = this.entities.put(entity.uniqueId(), entity);
         if (prevEntity != null) {
             ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "Duplicate unique entity ID: " + entity.uniqueId());
@@ -97,6 +101,7 @@ public class EntityTracker extends StoredObject {
         }
 
         this.runtimeIdToUniqueId.remove(entity.runtimeId());
+        this.javaIdToUniqueId.remove(entity.javaId());
         this.entities.remove(entity.uniqueId());
 
         if (entity instanceof PlayerEntity player) {
@@ -176,6 +181,10 @@ public class EntityTracker extends StoredObject {
 
     public Entity getEntityByRid(final long runtimeId) {
         return this.entities.get(this.runtimeIdToUniqueId.get(runtimeId));
+    }
+
+    public Entity getEntityByJid(final int javaID) {
+        return this.entities.get(this.javaIdToUniqueId.get(javaID));
     }
 
     public Entity getEntityByUid(final long uniqueId) {

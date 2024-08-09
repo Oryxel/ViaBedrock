@@ -26,6 +26,7 @@ import com.viaversion.viaversion.protocols.v1_20_5to1_21.packet.ClientboundPacke
 import com.viaversion.viaversion.util.Pair;
 import net.raphimc.viabedrock.ViaBedrock;
 import net.raphimc.viabedrock.api.model.entity.ClientPlayerEntity;
+import net.raphimc.viabedrock.api.model.entity.Entity;
 import net.raphimc.viabedrock.api.util.BitSets;
 import net.raphimc.viabedrock.api.util.PacketFactory;
 import net.raphimc.viabedrock.protocol.BedrockProtocol;
@@ -317,6 +318,18 @@ public class ClientPlayerPackets {
             } else {
                 clientPlayer.addAuthInputData(PlayerAuthInputPacket_InputData.MissedSwing);
             }
+        });
+
+        protocol.registerServerbound(ServerboundPackets1_20_5.INTERACT, wrapper -> {
+            final ClientPlayerEntity clientPlayer = wrapper.user().get(EntityTracker.class).getClientPlayer();
+            final EntityTracker entityTracker = wrapper.user().get(EntityTracker.class);
+            wrapper.cancel();
+
+            int entityID = wrapper.read(Types.VAR_INT);
+            Entity entity = entityTracker.getEntityByJid(entityID);
+            if (entity == null) return;
+
+            clientPlayer.sendInteractPacketToServer(entity.runtimeId(), wrapper.read(Types.VAR_INT));
         });
     }
 

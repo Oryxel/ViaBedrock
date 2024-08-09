@@ -39,7 +39,7 @@ import net.raphimc.viabedrock.protocol.types.BedrockTypes;
 
 public class InventoryContainer extends Container {
 
-    private byte selectedHotbarSlot = 0;
+    public byte selectedHotbarSlot = 0;
 
     public InventoryContainer(final UserConnection user) {
         super(user, (byte) ContainerID.CONTAINER_ID_INVENTORY.getValue(), ContainerType.INVENTORY, null, null, 36);

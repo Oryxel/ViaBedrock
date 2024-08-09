@@ -24,6 +24,8 @@ import com.viaversion.viaversion.api.protocol.packet.PacketWrapper;
 import com.viaversion.viaversion.api.type.Types;
 import com.viaversion.viaversion.protocols.v1_20_5to1_21.packet.ClientboundPackets1_21;
 import com.viaversion.viaversion.util.Pair;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import net.raphimc.viabedrock.ViaBedrock;
 import net.raphimc.viabedrock.api.util.MathUtil;
 import net.raphimc.viabedrock.protocol.BedrockProtocol;
@@ -32,21 +34,14 @@ import net.raphimc.viabedrock.protocol.data.ProtocolConstants;
 import net.raphimc.viabedrock.protocol.data.enums.bedrock.*;
 import net.raphimc.viabedrock.protocol.data.enums.java.AbilitiesFlag;
 import net.raphimc.viabedrock.protocol.data.enums.java.GameMode;
-import net.raphimc.viabedrock.protocol.model.EntityAttribute;
-import net.raphimc.viabedrock.protocol.model.PlayerAbilities;
-import net.raphimc.viabedrock.protocol.model.Position2f;
-import net.raphimc.viabedrock.protocol.model.Position3f;
+import net.raphimc.viabedrock.protocol.model.*;
 import net.raphimc.viabedrock.protocol.rewriter.GameTypeRewriter;
-import net.raphimc.viabedrock.protocol.storage.ChunkTracker;
-import net.raphimc.viabedrock.protocol.storage.CommandsStorage;
-import net.raphimc.viabedrock.protocol.storage.GameSessionStorage;
-import net.raphimc.viabedrock.protocol.storage.PlayerListStorage;
+import net.raphimc.viabedrock.protocol.rewriter.ItemRewriter;
+import net.raphimc.viabedrock.protocol.storage.*;
 import net.raphimc.viabedrock.protocol.types.BedrockTypes;
+import net.raphimc.viabedrock.protocol.types.item.BedrockItemType;
 
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 
@@ -91,6 +86,34 @@ public class ClientPlayerEntity extends PlayerEntity {
 
         if (this.gameSession.getMovementMode() != ServerAuthMovementMode.ClientAuthoritative && this.initiallySpawned && !this.isDead()) {
             this.sendPlayerAuthInputPacketToServer(ClientPlayMode.Screen);
+        }
+    }
+
+    public void sendInteractPacketToServer(long runtimeId, int type) {
+        final InventoryTracker tracker = this.user.get(InventoryTracker.class);
+
+        int selectedSlot = tracker.getInventoryContainer().selectedHotbarSlot;
+        final BedrockItem item = tracker.getInventoryContainer().getItem(selectedSlot);
+
+        BedrockItemType itemType = (BedrockItemType) this.user.get(ItemRewriter.class).getItemType();
+
+        System.out.println(type);
+        ByteBuf buffer = Unpooled.buffer();
+        try {
+            BedrockTypes.VAR_INT.write(buffer, 1); // legacy request id
+            BedrockTypes.UNSIGNED_VAR_INT.write(buffer, 3); // transaction type
+            BedrockTypes.UNSIGNED_VAR_LONG.write(buffer, 0L);
+            BedrockTypes.UNSIGNED_VAR_LONG.write(buffer, runtimeId); // runtime id
+            BedrockTypes.UNSIGNED_VAR_INT.write(buffer, type); // action type
+            BedrockTypes.UNSIGNED_VAR_INT.write(buffer, selectedSlot); // selected slot
+            itemType.write(buffer, item); // item
+            BedrockTypes.POSITION_3F.write(buffer, position); // player position
+            BedrockTypes.POSITION_3F.write(buffer, new Position3f(0, 0, 0)); // click position (for touch user?)
+
+            final PacketWrapper inventoryTransaction = PacketWrapper.create(ServerboundBedrockPackets.INVENTORY_TRANSACTION, buffer, this.user);
+            inventoryTransaction.sendToServer(BedrockProtocol.class);
+        } finally {
+            buffer.release();
         }
     }
 
