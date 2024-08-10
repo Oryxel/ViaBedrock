@@ -122,7 +122,8 @@ public class ItemRewriter extends StoredObject {
             } else {
                 ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "Missing bedrock -> java item mapping for " + identifier);
                 final StructuredDataContainer data = ProtocolConstants.createStructuredDataContainer();
-                data.set(StructuredDataKey.ITEM_NAME, TextUtil.stringToNbt("§cMissing item: " + identifier));
+                data.set(StructuredDataKey.ITEM_NAME, TextUtil.stringToNbt(identifier));
+                data.set(StructuredDataKey.CUSTOM_MODEL_DATA, identifier.hashCode());
                 return new StructuredItem(BedrockProtocol.MAPPINGS.getJavaItems().get("minecraft:paper"), bedrockItem.amount(), data);
             }
         }
