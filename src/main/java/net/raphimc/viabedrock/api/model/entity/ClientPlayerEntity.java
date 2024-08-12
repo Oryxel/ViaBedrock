@@ -146,7 +146,7 @@ public class ClientPlayerEntity extends PlayerEntity {
             BedrockTypes.VAR_INT.write(buffer, selectedSlot); // selected slot
             itemType.write(buffer, item); // item
             BedrockTypes.POSITION_3F.write(buffer, position); // player position
-            BedrockTypes.POSITION_3F.write(buffer, new Position3f(0, 0, 0)); // click position (default, for touch user.)
+            BedrockTypes.POSITION_3F.write(buffer, new Position3f(0, 0, 0)); // click position (this is always 0 0 0 for mouse attack)
 
             final PacketWrapper inventoryTransaction = PacketWrapper.create(ServerboundBedrockPackets.INVENTORY_TRANSACTION, buffer, this.user);
             inventoryTransaction.sendToServer(BedrockProtocol.class);
