@@ -104,6 +104,19 @@ public class InventoryTracker extends StoredObject {
         openScreen.write(Types.VAR_INT, (int) container.javaWindowId()); // window id
         openScreen.write(Types.VAR_INT, BedrockProtocol.MAPPINGS.getBedrockToJavaContainers().get(container.type())); // type
         openScreen.write(Types.TAG, TextUtil.textComponentToNbt(container.title())); // title
+
+        openScreen.send(BedrockProtocol.class);
+        PacketFactory.sendJavaContainerSetContent(this.getUser(), container);
+    }
+
+    public void openLargeContainer(final Container container) {
+        this.containerStack.push(container);
+
+        final PacketWrapper openScreen = PacketWrapper.create(ClientboundPackets1_21.OPEN_SCREEN, this.getUser());
+        openScreen.write(Types.VAR_INT, (int) container.javaWindowId()); // window id
+        openScreen.write(Types.VAR_INT, 5); // type
+        openScreen.write(Types.TAG, TextUtil.textComponentToNbt(container.title())); // title
+
         openScreen.send(BedrockProtocol.class);
         PacketFactory.sendJavaContainerSetContent(this.getUser(), container);
     }

@@ -25,7 +25,7 @@ import net.raphimc.viabedrock.protocol.data.ProtocolConstants;
 import net.raphimc.viabedrock.protocol.storage.ResourcePacksStorage;
 
 import java.awt.image.BufferedImage;
-import java.util.Locale;
+import java.util.*;
 
 public class ResourcePackRewriter {
 
@@ -36,6 +36,7 @@ public class ResourcePackRewriter {
 
         resourcePacksStorage.iterateResourcePacksBottomToTop(pack -> {
             convertGlyphSheets(pack.content(), javaContent);
+            convertUITextures(pack.content(), javaContent);
             return true;
         });
 
@@ -51,6 +52,98 @@ public class ResourcePackRewriter {
         pack.addProperty("pack_format", ProtocolConstants.JAVA_PACK_VERSION);
         pack.addProperty("description", "ViaBedrock Resource Pack");
         return root;
+    }
+
+    // semi support for button icons...
+    private static void convertUITextures(final ResourcePack.Content bedrockContent, final ResourcePack.Content javaContent) {
+        Map<Integer, String> map = new HashMap<>();
+        List<Integer> keys = new ArrayList<>();
+        for (Map.Entry<String, byte[]> entry : bedrockContent.entrySet()) {
+            String path = entry.getKey();
+            if (!path.startsWith("textures/ui") || !path.endsWith(".png") && !path.endsWith(".jpg"))
+                continue;
+
+            BufferedImage image = bedrockContent.getImage(path);
+            path = path.replace(".png", "").replace(".jpg", "");
+            // image smaller than 16x16 might cause issues!
+            if (image == null || image.getHeight() * image.getWidth() < 256)
+                continue;
+
+            final String[] splitName = path.split("/");
+            String simpleName = splitName[splitName.length - 1];
+            int modelData = Math.abs(("ui/" + simpleName).hashCode()) + 1;
+            String nameWithModelData = simpleName + Math.abs(modelData);
+
+            putImageToPath(javaContent, image, nameWithModelData);
+            putModelItemToPath(javaContent, nameWithModelData);
+
+            keys.add(modelData);
+            map.put(modelData, nameWithModelData);
+
+            System.out.println(simpleName + "," + modelData);
+        }
+
+        Collections.sort(keys);
+        if (!map.isEmpty()) {
+            putItemToPath(javaContent, keys, map);
+        }
+    }
+
+    private static void putItemToPath(ResourcePack.Content javaContent, List<Integer> sortedKeys, Map<Integer, String> map) {
+        JsonObject itemJson = new JsonObject();
+        itemJson.addProperty("parent", "minecraft:item/generated");
+        JsonObject o1 = new JsonObject();
+        o1.addProperty("layer0", "minecraft:item/map");
+        itemJson.add("textures", o1);
+
+        JsonElement overridesElement = itemJson.get("overrides");
+        JsonArray overrides;
+        boolean notInit = false;
+        if (overridesElement == null || !overridesElement.isJsonArray()) {
+            overrides = new JsonArray();
+            notInit = true;
+        } else {
+            overrides = overridesElement.getAsJsonArray();
+        }
+
+        for (Integer i : sortedKeys) {
+            JsonObject overrideObject = new JsonObject();
+            overrideObject.addProperty("model", "viabedrock/ui/" + map.get(i));
+            JsonObject predicate = new JsonObject();
+            predicate.addProperty("custom_model_data",i);
+            overrideObject.add("predicate", predicate);
+            overrides.add(overrideObject);
+        }
+
+        if (notInit) {
+            itemJson.add("overrides", overrides);
+        }
+
+        javaContent.putJson("assets/minecraft/models/item/map.json", itemJson);
+    }
+
+    private static void putModelItemToPath(ResourcePack.Content javaContent, String name) {
+        JsonObject itemModelJson = new JsonObject();
+        itemModelJson.addProperty("parent", "minecraft:item/generated");
+        JsonObject o = new JsonObject();
+        o.addProperty("layer0", "minecraft:item/" + name);
+
+        JsonObject display = new JsonObject();
+        JsonObject gui = new JsonObject();
+        JsonArray scale = new JsonArray();
+        scale.add(3); scale.add(3); scale.add(3);
+        gui.add("scale", scale);
+        display.add("gui", gui);
+        itemModelJson.add("display", display);
+
+        itemModelJson.add("textures", o);
+        String jsonJavaPath = "assets/minecraft/models/viabedrock/ui/" + name + ".json";
+        javaContent.putJson(jsonJavaPath, itemModelJson);
+    }
+
+    private static void putImageToPath(ResourcePack.Content javaContent, BufferedImage image, String simpleName) {
+        final String javaPath = "assets/minecraft/textures/item/" + simpleName + ".png";
+        javaContent.putImage(javaPath, image);
     }
 
     // TODO: Maybe the new Unihex provider is better

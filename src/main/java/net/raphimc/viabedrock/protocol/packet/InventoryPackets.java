@@ -35,7 +35,7 @@ import net.raphimc.viabedrock.api.chunk.BedrockBlockEntity;
 import net.raphimc.viabedrock.api.model.container.ChestContainer;
 import net.raphimc.viabedrock.api.model.container.Container;
 import net.raphimc.viabedrock.api.model.container.fake.FakeContainer;
-import net.raphimc.viabedrock.api.model.container.fake.FormContainer;
+import net.raphimc.viabedrock.api.model.container.fake.NewFormContainer;
 import net.raphimc.viabedrock.api.model.container.player.InventoryContainer;
 import net.raphimc.viabedrock.api.util.PacketFactory;
 import net.raphimc.viabedrock.api.util.TextUtil;
@@ -200,7 +200,7 @@ public class InventoryPackets {
                 return;
             }
             form.setTranslator(wrapper.user().get(ResourcePacksStorage.class)::translate);
-            inventoryTracker.openContainer(new FormContainer(wrapper.user(), id, form));
+            inventoryTracker.openLargeContainer(new NewFormContainer(wrapper.user(), id, form));
         });
         protocol.registerClientbound(ClientboundBedrockPackets.CLOSE_FORM, null, wrapper -> {
             wrapper.cancel();
