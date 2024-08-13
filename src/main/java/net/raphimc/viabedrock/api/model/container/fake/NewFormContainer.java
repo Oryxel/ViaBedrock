@@ -66,6 +66,8 @@ public class NewFormContainer extends FakeContainer {
         updateFormItems();
     }
 
+    //TODO: implement clicking handling.
+
     private void updateFormItems() {
         this.formItems = new Item[SIZE];
 
@@ -228,6 +230,7 @@ public class NewFormContainer extends FakeContainer {
         return findBestSlot(name, "", requiredX, requiredY, page, description);
     }
 
+    // TODO: this doesn't seems optimized, fix that?
     private int[] findBestSlot(String name, String path, int requiredX, int requiredY, int page, String... description) {
         int slotX = -1, slotY = -1;
         boolean found = false;
@@ -267,6 +270,7 @@ public class NewFormContainer extends FakeContainer {
             }
 
             if (!path.isEmpty()) {
+                // TODO: some servers like lifeboat use minecraft already existing texture, implement that!
                 final String[] splitName = path.split("/");
                 String simpleName = splitName[splitName.length - 1];
                 int modelData = Math.abs(("ui/" + simpleName).hashCode()) + 1;
@@ -286,6 +290,7 @@ public class NewFormContainer extends FakeContainer {
         return new int[] { slotX, slotY };
     }
 
+    // TODO: please clean this up
     private String getIdentifierBasedSlot(boolean isOneColumn, int minX, int minY, int maxX, int maxY) {
         int minSlotX = maxX - minX, minSlotY = maxY - minY;
 
