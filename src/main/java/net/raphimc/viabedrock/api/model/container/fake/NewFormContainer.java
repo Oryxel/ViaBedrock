@@ -33,6 +33,7 @@ import net.lenni0451.mcstructs_bedrock.forms.types.ActionForm;
 import net.lenni0451.mcstructs_bedrock.forms.types.CustomForm;
 import net.lenni0451.mcstructs_bedrock.forms.types.ModalForm;
 import net.lenni0451.mcstructs_bedrock.text.utils.BedrockTextUtils;
+import net.raphimc.viabedrock.api.util.StringUtil;
 import net.raphimc.viabedrock.api.util.TextUtil;
 import net.raphimc.viabedrock.protocol.BedrockProtocol;
 import net.raphimc.viabedrock.protocol.ServerboundBedrockPackets;
@@ -58,7 +59,7 @@ public class NewFormContainer extends FakeContainer {
     public Item[][][] inventory = new Item[MAX_PAGES][6][9];
 
     public NewFormContainer(final UserConnection user, final int formId, final AForm form) {
-        super(user, ContainerType.CONTAINER, TextUtil.stringToTextComponent("§f\uF808\uFDDC"));
+        super(user, ContainerType.CONTAINER, TextUtil.stringToTextComponent("§f\uF808\uFDDC§8" + StringUtil.buildNegativePixels(169) + form.getTitle()));
 
         this.formId = formId;
         this.form = form;

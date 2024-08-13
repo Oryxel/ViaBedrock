@@ -50,4 +50,14 @@ public class StringUtil {
         return builder.toString();
     }
 
+    public static String buildNegativePixels(int pixels) {
+        int times = pixels / 8;
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < times; i++) {
+            builder.append("\uF808");
+        }
+
+        return builder.toString();
+    }
+
 }

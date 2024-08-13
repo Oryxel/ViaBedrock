@@ -71,6 +71,11 @@ public class ResourcePackRewriter {
 
             final String[] splitName = path.split("/");
             String simpleName = splitName[splitName.length - 1];
+
+            String jsonFile = entry.getKey().replace(".png", ".json").replace(".jpg", ".json");
+            if (bedrockContent.containsKey(jsonFile)) // this is already used for customizing hud...
+                continue;
+
             int modelData = Math.abs(("ui/" + simpleName).hashCode()) + 1;
             String nameWithModelData = simpleName + Math.abs(modelData);
 
