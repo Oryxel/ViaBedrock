@@ -136,7 +136,10 @@ public class NewFormContainer extends FakeContainer {
                 return true;
             }
         } else if (this.form instanceof ActionForm actionForm) {
-            actionForm.setClickedButton(index);
+            if (index == 0)
+                return false;
+
+            actionForm.setClickedButton(index - 1);
             this.close();
             return true;
         } else if (this.form instanceof CustomForm customForm) {
@@ -218,10 +221,8 @@ public class NewFormContainer extends FakeContainer {
             findBestSlot(modalForm.getButton1(), 9, 1, 0);
             findBestSlot(modalForm.getButton1(), 9, 1, 0);
         } else if (this.form instanceof ActionForm actionForm) {
-            if (!actionForm.getText().isBlank()) {
-                int size = Math.min(4, (actionForm.getText().length() / 65) + 1);
-                findBestSlot("Text", 9, size, 0, actionForm.getText());
-            }
+            int size = Math.min(4, (actionForm.getText().length() / 65) + 1);
+            findBestSlot("Text", 9, size, 0, actionForm.getText());
 
             for (final ActionForm.Button button : actionForm.getButtons()) {
                 String text = button.getText();
