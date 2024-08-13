@@ -136,10 +136,7 @@ public class NewFormContainer extends FakeContainer {
                 return true;
             }
         } else if (this.form instanceof ActionForm actionForm) {
-            if (index == 0)
-                return false;
-
-            actionForm.setClickedButton(index - 1);
+            actionForm.setClickedButton(index);
             this.close();
             return true;
         } else if (this.form instanceof CustomForm customForm) {
@@ -215,14 +212,16 @@ public class NewFormContainer extends FakeContainer {
         if (this.form instanceof ModalForm modalForm) {
             if (!modalForm.getText().isBlank()) {
                 int size = Math.min(4, (modalForm.getText().length() / 65) + 1);
-                findBestSlot("Text", 9, size, 0, modalForm.getText());
+                findBestSlot("Text", "", 9, size, 0, false, modalForm.getText());
             }
 
             findBestSlot(modalForm.getButton1(), 9, 1, 0);
             findBestSlot(modalForm.getButton1(), 9, 1, 0);
         } else if (this.form instanceof ActionForm actionForm) {
-            int size = Math.min(4, (actionForm.getText().length() / 65) + 1);
-            findBestSlot("Text", 9, size, 0, actionForm.getText());
+            if (!actionForm.getText().isBlank()) {
+                int size = Math.min(4, (actionForm.getText().length() / 65) + 1);
+                findBestSlot("Text", "", 9, size, 0, false, actionForm.getText());
+            }
 
             for (final ActionForm.Button button : actionForm.getButtons()) {
                 String text = button.getText();
@@ -383,8 +382,12 @@ public class NewFormContainer extends FakeContainer {
         return findBestSlot(name, "", requiredX, requiredY, page, description);
     }
 
-    // TODO: this doesn't seems optimized, fix that?
     private int[] findBestSlot(String name, String path, int requiredX, int requiredY, int page, String... description) {
+        return findBestSlot(name, path, requiredX, requiredY, page, true, description);
+    }
+
+    // TODO: this doesn't seems optimized, fix that?
+    private int[] findBestSlot(String name, String path, int requiredX, int requiredY, int page, boolean add, String... description) {
         int slotX = -1, slotY = -1;
         boolean found = false;
 
@@ -428,7 +431,9 @@ public class NewFormContainer extends FakeContainer {
                 }
             }
 
-            this.itemMap.add(integers);
+            if (add) {
+                this.itemMap.add(integers);
+            }
 
             if (!path.isEmpty()) {
                 // TODO: some servers like lifeboat use minecraft already existing texture, implement that!
