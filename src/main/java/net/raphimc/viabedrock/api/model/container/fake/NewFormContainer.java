@@ -33,6 +33,7 @@ import net.lenni0451.mcstructs_bedrock.forms.types.ActionForm;
 import net.lenni0451.mcstructs_bedrock.forms.types.CustomForm;
 import net.lenni0451.mcstructs_bedrock.forms.types.ModalForm;
 import net.lenni0451.mcstructs_bedrock.text.utils.BedrockTextUtils;
+import net.raphimc.viabedrock.api.util.MathUtil;
 import net.raphimc.viabedrock.api.util.StringUtil;
 import net.raphimc.viabedrock.api.util.TextUtil;
 import net.raphimc.viabedrock.protocol.BedrockProtocol;
@@ -40,6 +41,8 @@ import net.raphimc.viabedrock.protocol.ServerboundBedrockPackets;
 import net.raphimc.viabedrock.protocol.data.ProtocolConstants;
 import net.raphimc.viabedrock.protocol.data.enums.bedrock.ContainerType;
 import net.raphimc.viabedrock.protocol.data.enums.bedrock.ModalFormCancelReason;
+import net.raphimc.viabedrock.protocol.data.enums.java.ClickType;
+import net.raphimc.viabedrock.protocol.storage.InventoryTracker;
 import net.raphimc.viabedrock.protocol.types.BedrockTypes;
 
 import java.util.ArrayList;
@@ -58,6 +61,8 @@ public class NewFormContainer extends FakeContainer {
 
     public Item[][][] inventory = new Item[MAX_PAGES][6][9];
 
+    private final List<Integer[]> itemMap = new ArrayList<>();
+
     public NewFormContainer(final UserConnection user, final int formId, final AForm form) {
         super(user, ContainerType.CONTAINER, TextUtil.stringToTextComponent("§f\uF808\uFDDC§8" + StringUtil.buildNegativePixels(169) + form.getTitle()));
 
@@ -67,12 +72,149 @@ public class NewFormContainer extends FakeContainer {
         updateFormItems();
     }
 
-    //TODO: implement clicking handling.
+    @Override
+    public void close() {
+        this.sendModalFormResponse(false);
+        super.close();
+    }
+
+    @Override
+    public boolean handleClick(int revision, short slot, byte button, ClickType action) {
+        if (action != ClickType.PICKUP) return false;
+
+        if (slot == 45 && currentPage > 0) {
+            currentPage--;
+            updatePage();
+            return false;
+        } else if (slot == 53 && currentPage < totalPage) {
+            currentPage++;
+            updatePage();
+            return false;
+        } else if (slot == 52 && this.form instanceof CustomForm) {
+            this.close();
+            return true;
+        }
+
+        int intSlot = slot;
+        int index = -1;
+
+        int pickedY = intSlot / 9;
+
+        for (int i = 0; i < itemMap.size(); i++) {
+            boolean found = false, isIndex = true;
+            for (int validSlot : itemMap.get(i)) {
+                if (isIndex && validSlot != currentPage) {
+                    break;
+                }
+
+                if (intSlot == validSlot) {
+                    found = true;
+                    break;
+                }
+
+                isIndex = false;
+            }
+
+            if (found) {
+                index = i;
+                break;
+            }
+        }
+
+        if (index == -1)
+            return false;
+
+        if (this.form instanceof ModalForm modalForm) {
+            modalForm.setClickedButton(-1);
+            if (pickedY == 0)
+                modalForm.setClickedButton(0);
+            else if (pickedY == 1)
+                modalForm.setClickedButton(1);
+
+            if (modalForm.getClickedButton() != -1) {
+                this.close();
+                return true;
+            }
+        } else if (this.form instanceof ActionForm actionForm) {
+            actionForm.setClickedButton(index);
+            this.close();
+            return true;
+        } else if (this.form instanceof CustomForm customForm) {
+            if (index > customForm.getElements().length) return false;
+            final AFormElement element = customForm.getElements()[index];
+
+            if (element instanceof CheckboxFormElement checkbox) {
+                if (button != 0) return false;
+
+                checkbox.setChecked(!checkbox.isChecked());
+            } else if (element instanceof DropdownFormElement dropdown) {
+                if (button != 0 && button != 1) return false;
+
+                final int selected = MathUtil.clamp(dropdown.getSelected(), -1, dropdown.getOptions().length);
+                final int newSelected = selected + (button == 0 ? 1 : -1);
+                if (newSelected >= dropdown.getOptions().length || selected == -1) {
+                    dropdown.setSelected(0);
+                } else if (newSelected < 0 || selected == dropdown.getOptions().length) {
+                    dropdown.setSelected(dropdown.getOptions().length - 1);
+                } else {
+                    dropdown.setSelected(newSelected);
+                }
+            } else if (element instanceof SliderFormElement slider) {
+                if (button != 0 && button != 1) return false;
+
+                final float value = slider.getCurrent();
+                final float newValue = MathUtil.clamp(value + (button == 0 ? slider.getStep() : -slider.getStep()), slider.getMin(), slider.getMax());
+                slider.setCurrent(Math.round(newValue * 1000000F) / 1000000F);
+            } else if (element instanceof StepSliderFormElement stepSlider) {
+                if (button != 0 && button != 1) return false;
+
+                final int selected = MathUtil.clamp(stepSlider.getSelected(), -1, stepSlider.getSteps().length);
+                final int newSelected = selected + (button == 0 ? 1 : -1);
+                if (newSelected >= stepSlider.getSteps().length || selected == -1) {
+                    stepSlider.setSelected(0);
+                } else if (newSelected < 0 || selected == stepSlider.getSteps().length) {
+                    stepSlider.setSelected(stepSlider.getSteps().length - 1);
+                } else {
+                    stepSlider.setSelected(newSelected);
+                }
+            } else if (element instanceof TextFieldFormElement textField) {
+                this.user.get(InventoryTracker.class).openContainer(new AnvilTextInputContainer(this.user, TextUtil.stringToTextComponent("Edit text"), textField::setValue) {
+                    @Override
+                    public Item[] getJavaItems() {
+                        final List<Item> items = new ArrayList<>();
+                        final List<String> description = new ArrayList<>();
+                        description.add("§7Description: " + textField.getText());
+                        description.add("§7Element: TextField");
+                        description.add("§9Close GUI to save");
+                        items.add(NewFormContainer.this.createItem("minecraft:paper", -1, textField.getValue(), description.toArray(new String[0])));
+                        return items.toArray(new Item[0]);
+                    }
+
+                    @Override
+                    public void onClosed() {
+                        NewFormContainer.this.updateFormItems();
+                        super.onClosed();
+                    }
+                });
+            }
+
+            this.updateFormItems();
+        }
+
+
+        return false;
+    }
 
     private void updateFormItems() {
         this.formItems = new Item[SIZE];
+        this.itemMap.clear();
 
         if (this.form instanceof ModalForm modalForm) {
+            if (!modalForm.getText().isBlank()) {
+                int size = Math.min(4, (modalForm.getText().length() / 65) + 1);
+                findBestSlot("Text", 9, size, 0, modalForm.getText());
+            }
+
             findBestSlot(modalForm.getButton1(), 9, 1, 0);
             findBestSlot(modalForm.getButton1(), 9, 1, 0);
         } else if (this.form instanceof ActionForm actionForm) {
@@ -87,7 +229,6 @@ public class NewFormContainer extends FakeContainer {
                         button.getImage().getType() == FormImage.Type.PATH ? button.getImage().getValue() : "";
                 if (text.contains("grid_tile") || text.contains("big_button")) {
                     String filteredText = text.replace("grid_tile", "").replace("big_button", "");
-                    System.out.println(button.getImage().getType().name() + "," + button.getImage().getValue());
 
                     findBestSlot(filteredText, pathImage, 3, 3, 0);
                 } else {
@@ -165,6 +306,10 @@ public class NewFormContainer extends FakeContainer {
             throw new IllegalArgumentException("Unknown form type: " + this.form.getClass().getSimpleName());
         }
 
+        updatePage();
+    }
+
+    private void updatePage() {
         Item[][] page = inventory[currentPage];
         for (int yl = 0; yl < page.length; yl++) {
             Item[] y = page[yl];
@@ -177,6 +322,8 @@ public class NewFormContainer extends FakeContainer {
                     item = this.createItem("minecraft:item_frame", "back_page_item".hashCode(), "Last Page");
                 } else if (x == 8 && yl == 5 && currentPage < totalPage) {
                     item = this.createItem("minecraft:item_frame", "next_page_item".hashCode(), "Next Page");
+                } else if (x == 7 && yl == 5 && this.form instanceof CustomForm) {
+                    item = this.createItem("minecraft:item_frame", "confirm_button".hashCode(), "Sumbit");
                 }
 
                 this.formItems[yl * y.length + x] = item;
@@ -204,7 +351,11 @@ public class NewFormContainer extends FakeContainer {
 
         final StructuredDataContainer data = ProtocolConstants.createStructuredDataContainer();
         data.set(StructuredDataKey.ITEM_NAME, this.stringToNbt(name.replace("\n", " | ")));
-        data.set(StructuredDataKey.CUSTOM_MODEL_DATA, Math.abs(modelData) + 1);
+
+        if (modelData != -1) {
+            data.set(StructuredDataKey.CUSTOM_MODEL_DATA, Math.abs(modelData) + 1);
+        }
+
         if (description.length > 0) {
             final List<Tag> loreTags = new ArrayList<>();
             for (String desc : description) {
@@ -261,14 +412,22 @@ public class NewFormContainer extends FakeContainer {
         }
 
         if (slotX != -1 && slotY != -1) {
+            Integer[] integers = new Integer[requiredX * requiredY + 1];
+            integers[0] = totalPage;
+            int count = 1;
             for (int y = slotY; y < slotY + requiredY; y++) {
                 for (int x = slotX; x < slotX + requiredX; x++) {
                     int modelData = getIdentifierBasedSlot(requiredY == 1, x, y, slotX + requiredX - 1, slotY + requiredY - 1).hashCode();
                     Item item = createItem("minecraft:item_frame", modelData, name, description);
 
                     inventory[y][x] = item;
+                    integers[count] = y * 9 + x;
+
+                    count++;
                 }
             }
+
+            this.itemMap.add(integers);
 
             if (!path.isEmpty()) {
                 // TODO: some servers like lifeboat use minecraft already existing texture, implement that!
@@ -281,8 +440,6 @@ public class NewFormContainer extends FakeContainer {
 
                 inventory[centerY][centerX] = item;
             }
-
-            System.out.println(path);
         } else {
             totalPage++;
             return findBestSlot(name, requiredX, requiredY, totalPage);
