@@ -20,6 +20,8 @@ package net.raphimc.viabedrock.api.util;
 import com.viaversion.viaversion.libs.mcstructs.core.Identifier;
 
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class StringUtil {
 
@@ -55,6 +57,24 @@ public class StringUtil {
     public static String makeIdentifierValueSafe(final String s) {
         final String invalidCharsRegex = Identifier.VALID_VALUE_CHARS.replace("[", "[^").replace("]*", "]");
         return s.replace(":", "/").replaceAll(invalidCharsRegex, "_");
+    }
+
+    public static String addQuote(String input) {
+        Pattern pattern = Pattern.compile("\\b(geometry|texture|Geometry|Texture)\\.\\w+\\b");
+        Matcher matcher = pattern.matcher(input);
+        StringBuilder result = new StringBuilder();
+        int lastIndex = 0;
+        while (matcher.find()) {
+            result.append(input, lastIndex, matcher.start());
+            result.append('\'').append(matcher.group()).append('\'');
+            lastIndex = matcher.end();
+        }
+        result.append(input.substring(lastIndex));
+        return result.toString();
+    }
+
+    public static String toDecimal(Object number) {
+        return String.format("%.10f", number).replaceAll("0*$", "").replaceAll("\\.$", "");
     }
 
 }

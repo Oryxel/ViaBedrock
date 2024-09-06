@@ -79,7 +79,7 @@ public class Entity {
         }
     }
 
-    public final void updateEntityData(final EntityData[] entityData) {
+    public void updateEntityData(final EntityData[] entityData) {
         final List<EntityData> javaEntityData = new ArrayList<>();
         this.updateEntityData(entityData, javaEntityData);
         final PacketWrapper setEntityData = PacketWrapper.create(ClientboundPackets1_21.SET_ENTITY_DATA, this.user);

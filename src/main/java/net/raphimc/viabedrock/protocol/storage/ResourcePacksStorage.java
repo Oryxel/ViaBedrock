@@ -28,6 +28,7 @@ import net.raphimc.viabedrock.protocol.BedrockProtocol;
 import net.raphimc.viabedrock.protocol.ServerboundBedrockPackets;
 import net.raphimc.viabedrock.protocol.data.enums.bedrock.ResourcePackResponse;
 import net.raphimc.viabedrock.protocol.types.BedrockTypes;
+import org.oryxel.cube.model.bedrock.BedrockRenderController;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -48,6 +49,7 @@ public class ResourcePacksStorage extends StoredObject {
     private boolean javaClientWaitingForPack;
     private boolean loadedOnJavaClient;
     private final Map<String, Object> converterData = new HashMap<>();
+    private final Map<String, BedrockRenderController> bedrockControllers = new HashMap<>();
 
     private TextDefinitions texts;
     private BlockDefinitions blocks;
@@ -183,6 +185,10 @@ public class ResourcePacksStorage extends StoredObject {
 
     public Map<String, Object> getConverterData() {
         return this.converterData;
+    }
+
+    public Map<String, BedrockRenderController> getBedrockControllers() {
+        return bedrockControllers;
     }
 
     public boolean hasFinishedLoading() {

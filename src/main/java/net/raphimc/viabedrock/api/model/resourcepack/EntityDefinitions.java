@@ -20,12 +20,12 @@ package net.raphimc.viabedrock.api.model.resourcepack;
 import com.viaversion.viaversion.util.Key;
 import net.raphimc.viabedrock.ViaBedrock;
 import net.raphimc.viabedrock.protocol.storage.ResourcePacksStorage;
-import org.oryxel.cube.model.bedrock.BedrockEntityData;
-import org.oryxel.cube.parser.bedrock.BedrockEntitySerializer;
+import org.oryxel.cube.model.bedrock.BedrockGeneralData;
+import org.oryxel.cube.model.bedrock.BedrockRenderController;
+import org.oryxel.cube.parser.bedrock.BedrockControllerSerializer;
+import org.oryxel.cube.parser.bedrock.BedrockGeneralSerializer;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 
 // https://wiki.bedrock.dev/entities/entity-intro-rp.html
@@ -35,9 +35,21 @@ public class EntityDefinitions {
 
     public EntityDefinitions(final ResourcePacksStorage resourcePacksStorage) {
         for (ResourcePack pack : resourcePacksStorage.getPackStackBottomToTop()) {
+            for (String renderPath : pack.content().getFilesDeep("render_controllers/", ".json")) {
+                try {
+                    List<BedrockRenderController> controllers = BedrockControllerSerializer.deserialize(pack.content().getString(renderPath));
+                    controllers.forEach(controller -> resourcePacksStorage.getBedrockControllers().put(controller.identifier(), controller));
+                } catch (Throwable e) {
+                    ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "Failed to parse render controller in path" + renderPath + " in pack " + pack.packId(), e);
+                }
+            }
+
             for (String entityPath : pack.content().getFilesDeep("entity/", ".json")) {
                 try {
-                    final BedrockEntityData bedrockEntityData = BedrockEntitySerializer.deserialize(pack.content().getString(entityPath));
+                    final BedrockGeneralData bedrockEntityData = BedrockGeneralSerializer.deserialize(pack.content().getString(entityPath));
+                    if (bedrockEntityData.dataType() != BedrockGeneralData.GeneralDataType.ENTITY)
+                        continue;
+
                     final String identifier = Key.namespaced(bedrockEntityData.identifier());
                     this.entities.put(identifier, new EntityDefinition(identifier, bedrockEntityData));
                 } catch (Throwable e) {
@@ -58,9 +70,9 @@ public class EntityDefinitions {
     public static class EntityDefinition {
 
         private final String identifier;
-        private final BedrockEntityData entityData;
+        private final BedrockGeneralData entityData;
 
-        public EntityDefinition(final String identifier, final BedrockEntityData entityData) {
+        public EntityDefinition(final String identifier, final BedrockGeneralData entityData) {
             this.identifier = identifier;
             this.entityData = entityData;
         }
@@ -69,7 +81,7 @@ public class EntityDefinitions {
             return this.identifier;
         }
 
-        public BedrockEntityData entityData() {
+        public BedrockGeneralData entityData() {
             return this.entityData;
         }
 

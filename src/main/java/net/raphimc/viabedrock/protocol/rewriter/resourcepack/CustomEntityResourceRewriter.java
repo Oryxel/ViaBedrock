@@ -59,30 +59,19 @@ public class CustomEntityResourceRewriter {
             for (Map.Entry<String, String> modelEntry : entityDefinition.entityData().geometries().entrySet()) {
                 final BedrockGeometry bedrockGeometry = resourcePacksStorage.getModels().entityModels().get(modelEntry.getValue());
                 if (bedrockGeometry == null) continue;
-                if (!entityDefinition.entityData().textures().containsKey(modelEntry.getKey())) continue;
-
-                final String javaTexturePath = "entity_texture/" + StringUtil.makeIdentifierValueSafe(entityDefinition.entityData().textures().get(modelEntry.getKey()).replace("textures/", ""));
-
-                final List<ItemModelData> cubeConverterItemModels = Lists.newArrayList(FormatConverter.bedrockToJava("viabedrock:item/" + javaTexturePath, bedrockGeometry, OverflowFixType.SCALING));
-                final String key = entityEntry.getKey() + "_" + modelEntry.getKey();
-                resourcePacksStorage.getConverterData().put("ce_" + key, cubeConverterItemModels.size());
-                for (int i = 0; i < cubeConverterItemModels.size(); i++) {
-                    final ItemModelData cubeConverterItemModel = cubeConverterItemModels.get(i);
-                    final String javaModelName = StringUtil.makeIdentifierValueSafe(key + "_" + i);
-                    final int javaModelData = getCustomModelData(key + "_" + i);
-                    resourcePacksStorage.getConverterData().put("ce_" + key + "_" + i + "_scale", (float) cubeConverterItemModel.scale());
-
-                    javaContent.putString("assets/viabedrock/models/" + javaModelName + ".json", JavaModelSerializer.serialize(cubeConverterItemModel).toString());
-
-                    final JsonObject override = new JsonObject();
-                    override.addProperty("model", "viabedrock:" + javaModelName);
-                    final JsonObject predicate = new JsonObject();
-                    predicate.addProperty("custom_model_data", javaModelData);
-                    override.add("predicate", predicate);
-                    if (overridesMap.put(javaModelData, override) != null) {
-                        throw new IllegalStateException("Duplicate custom model data: " + override);
+                // Might increase conversion time, still need to do it since geometry name is not the same as texture name all the time.
+                // TODO: better solution than this one.
+                if (!entityDefinition.entityData().textures().containsKey(modelEntry.getKey())) {
+                    for (Map.Entry<String, String> textureEntry : entityDefinition.entityData().textures().entrySet()) {
+                        addModelToOverride(overridesMap, resourcePacksStorage, javaContent, entityEntry.getKey(),
+                                textureEntry.getKey(), modelEntry.getKey(), entityDefinition, bedrockGeometry);
                     }
+
+                    continue;
                 }
+
+                addModelToOverride(overridesMap, resourcePacksStorage, javaContent, entityEntry.getKey(),
+                        modelEntry.getKey(), modelEntry.getKey(), entityDefinition, bedrockGeometry);
             }
         }
 
@@ -97,6 +86,35 @@ public class CustomEntityResourceRewriter {
             layer0.addProperty("layer0", "minecraft:item/" + ITEM);
             itemDefinition.add("textures", layer0);
             javaContent.putJson("assets/minecraft/models/item/" + ITEM + ".json", itemDefinition);
+        }
+    }
+
+    private static void addModelToOverride(Map<Integer, JsonObject> map, ResourcePacksStorage storage, ResourcePack.Content javaContent,
+                                           String entityKey, String texture, String geometry, EntityDefinitions.EntityDefinition definitions,
+                                           BedrockGeometry bedrockGeometry) {
+        final String javaTexturePath = "entity_texture/" + StringUtil.makeIdentifierValueSafe(
+                definitions.entityData().textures().get(texture).replace("textures/", ""));
+
+        final List<ItemModelData> cubeConverterItemModels = Lists.newArrayList(FormatConverter.bedrockToJava("viabedrock:item/" +
+                javaTexturePath, bedrockGeometry, OverflowFixType.SCALING));
+        final String key = entityKey + "_" + texture + "_" + geometry;
+        storage.getConverterData().put("ce_" + key, cubeConverterItemModels.size());
+        for (int i = 0; i < cubeConverterItemModels.size(); i++) {
+            final ItemModelData cubeConverterItemModel = cubeConverterItemModels.get(i);
+            final String javaModelName = StringUtil.makeIdentifierValueSafe(key + "_" + i);
+            final int javaModelData = getCustomModelData(key + "_" + i);
+            storage.getConverterData().put("ce_" + key + "_" + i + "_scale", (float) cubeConverterItemModel.scale());
+
+            javaContent.putString("assets/viabedrock/models/" + javaModelName + ".json", JavaModelSerializer.serialize(cubeConverterItemModel).toString());
+
+            final JsonObject override = new JsonObject();
+            override.addProperty("model", "viabedrock:" + javaModelName);
+            final JsonObject predicate = new JsonObject();
+            predicate.addProperty("custom_model_data", javaModelData);
+            override.add("predicate", predicate);
+            if (map.put(javaModelData, override) != null) {
+                throw new IllegalStateException("Duplicate custom model data: " + override);
+            }
         }
     }
 
