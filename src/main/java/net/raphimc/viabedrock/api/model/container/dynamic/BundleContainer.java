@@ -35,7 +35,7 @@ public class BundleContainer extends Container {
     private final FullContainerName containerName;
 
     public BundleContainer(final UserConnection user, final FullContainerName containerName) {
-        super(user, (byte) ContainerID.CONTAINER_ID_REGISTRY.getValue(), ContainerType.NONE, null, null, 64);
+        super(user, (byte) ContainerID.CONTAINER_ID_REGISTRY.getValue(), ContainerType.NONE, null, null, 64, null);
         this.containerName = containerName;
     }
 

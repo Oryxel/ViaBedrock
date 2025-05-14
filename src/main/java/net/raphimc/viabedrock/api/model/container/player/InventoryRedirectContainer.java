@@ -26,7 +26,7 @@ import net.raphimc.viabedrock.protocol.storage.InventoryTracker;
 public abstract class InventoryRedirectContainer extends Container {
 
     public InventoryRedirectContainer(final UserConnection user, final byte containerId, final ContainerType type, final int size) {
-        super(user, containerId, type, null, null, size);
+        super(user, containerId, type, null, null, size, null);
     }
 
     @Override

@@ -37,15 +37,13 @@ import net.raphimc.viabedrock.api.model.container.Container;
 import net.raphimc.viabedrock.api.model.container.fake.FakeContainer;
 import net.raphimc.viabedrock.api.model.container.fake.FormContainer;
 import net.raphimc.viabedrock.api.model.container.player.InventoryContainer;
+import net.raphimc.viabedrock.api.model.entity.Entity;
 import net.raphimc.viabedrock.api.util.PacketFactory;
 import net.raphimc.viabedrock.api.util.TextUtil;
 import net.raphimc.viabedrock.protocol.BedrockProtocol;
 import net.raphimc.viabedrock.protocol.ClientboundBedrockPackets;
 import net.raphimc.viabedrock.protocol.ServerboundBedrockPackets;
-import net.raphimc.viabedrock.protocol.data.enums.bedrock.ContainerID;
-import net.raphimc.viabedrock.protocol.data.enums.bedrock.ContainerType;
-import net.raphimc.viabedrock.protocol.data.enums.bedrock.InteractPacket_Action;
-import net.raphimc.viabedrock.protocol.data.enums.bedrock.ModalFormCancelReason;
+import net.raphimc.viabedrock.protocol.data.enums.bedrock.*;
 import net.raphimc.viabedrock.protocol.data.enums.java.ClickType;
 import net.raphimc.viabedrock.protocol.model.BedrockItem;
 import net.raphimc.viabedrock.protocol.model.FullContainerName;
@@ -66,6 +64,7 @@ public class InventoryPackets {
             final ChunkTracker chunkTracker = wrapper.user().get(ChunkTracker.class);
             final BlockStateRewriter blockStateRewriter = wrapper.user().get(BlockStateRewriter.class);
             final InventoryTracker inventoryTracker = wrapper.user().get(InventoryTracker.class);
+            final EntityTracker entityTracker = wrapper.user().get(EntityTracker.class);
             final byte containerId = wrapper.read(Types.BYTE); // container id
             final byte rawType = wrapper.read(Types.BYTE); // type
             final ContainerType type = ContainerType.getByValue(rawType);
@@ -75,7 +74,7 @@ public class InventoryPackets {
                 return;
             }
             final BlockPosition position = wrapper.read(BedrockTypes.BLOCK_POSITION); // position
-            wrapper.read(BedrockTypes.VAR_LONG); // unique entity id
+            long uniqueEntityId = wrapper.read(BedrockTypes.VAR_LONG); // unique entity id
 
             if (inventoryTracker.isContainerOpen()) {
                 ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "Server tried to open container while another container is open");
@@ -88,14 +87,33 @@ public class InventoryPackets {
                 title = TextUtil.stringToTextComponent(wrapper.user().get(ResourcePacksStorage.class).getTexts().translate(customNameTag.getValue()));
             }
 
-            final Container container;
-            switch (type) {
-                case INVENTORY -> {
-                    inventoryTracker.setCurrentContainer(new InventoryContainer(wrapper.user(), containerId, position, inventoryTracker.getInventoryContainer()));
+            final Entity attachedEntity = entityTracker.getEntityByUid(uniqueEntityId);
+            if (uniqueEntityId != -1 && attachedEntity == null) {
+                ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "Server tried to open container with an invalid entity id.");
+                wrapper.cancel();
+                return;
+            }
+
+            if (attachedEntity != null) {
+                if (!attachedEntity.entityData().containsKey(ActorDataIDs.CONTAINER_SIZE)) {
+                    ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "Server tried to open container with an entity that doesn't have CONTAINER_SIZE metadata!");
                     wrapper.cancel();
                     return;
                 }
-                case CONTAINER -> container = new ChestContainer(wrapper.user(), containerId, title, position, 27);
+
+                if (attachedEntity.entityData().containsKey(ActorDataIDs.NAME)) {
+                    title = TextUtil.stringToTextComponent(wrapper.user().get(ResourcePacksStorage.class).getTexts().translate(attachedEntity.entityData().get(ActorDataIDs.NAME).value()));
+                }
+            }
+
+            final Container container;
+            switch (type) {
+                case INVENTORY -> {
+                    inventoryTracker.setCurrentContainer(new InventoryContainer(wrapper.user(), containerId, position, inventoryTracker.getInventoryContainer(), attachedEntity));
+                    wrapper.cancel();
+                    return;
+                }
+                case CONTAINER -> container = new ChestContainer(wrapper.user(), containerId, title, position, 27, attachedEntity);
                 case NONE, CAULDRON, JUKEBOX, ARMOR, HAND, HUD, DECORATED_POT -> { // Bedrock client can't open these containers
                     wrapper.cancel();
                     return;

@@ -28,7 +28,7 @@ import net.raphimc.viabedrock.protocol.storage.InventoryTracker;
 public abstract class FakeContainer extends Container {
 
     public FakeContainer(final UserConnection user, final ContainerType type, final TextComponent title) {
-        super(user, user.get(InventoryTracker.class).getNextFakeContainerId(), type, title, null, 0);
+        super(user, user.get(InventoryTracker.class).getNextFakeContainerId(), type, title, null, 0, null);
     }
 
     @Override

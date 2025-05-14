@@ -191,18 +191,33 @@ public class InventoryTracker extends StoredObject {
         if (currentContainer != null && currentContainer.position() != null) {
             if (currentContainer.type() == ContainerType.INVENTORY) return;
 
+            final EntityTracker entityTracker = this.user().get(EntityTracker.class);
             final ChunkTracker chunkTracker = this.user().get(ChunkTracker.class);
             final BlockStateRewriter blockStateRewriter = this.user().get(BlockStateRewriter.class);
-            final int blockState = chunkTracker.getBlockState(currentContainer.position());
-            final String tag = blockStateRewriter.tag(blockState);
-            if (!currentContainer.isValidBlockTag(tag)) {
-                ViaBedrock.getPlatform().getLogger().log(Level.INFO, "Closing " + currentContainer.type() + " because block state is not valid for container type: " + blockState);
-                this.forceCloseContainer(currentContainer);
-                return;
+
+            if (currentContainer.attachedEntity() == null) {
+                final int blockState = chunkTracker.getBlockState(currentContainer.position());
+                final String tag = blockStateRewriter.tag(blockState);
+                if (!currentContainer.isValidBlockTag(tag)) {
+                    ViaBedrock.getPlatform().getLogger().log(Level.INFO, "Closing " + currentContainer.type() + " because block state is not valid for container type: " + blockState);
+                    this.forceCloseContainer(currentContainer);
+                    return;
+                }
             }
 
-            final EntityTracker entityTracker = this.user().get(EntityTracker.class);
-            final Position3f containerPosition = new Position3f(currentContainer.position().x() + 0.5F, currentContainer.position().y() + 0.5F, currentContainer.position().z() + 0.5F);
+            Position3f containerPosition = new Position3f(currentContainer.position().x() + 0.5F, currentContainer.position().y() + 0.5F, currentContainer.position().z() + 0.5F);
+
+            // If the container is link with an entity then the server can send garbage position to the client so we check for entity position instead.
+            if (currentContainer.attachedEntity() != null) {
+                containerPosition = currentContainer.attachedEntity().position();
+
+                if (!currentContainer.isValidEntity()) {
+                    ViaBedrock.getPlatform().getLogger().log(Level.INFO, "Closing " + currentContainer.type() + " because entity doesn't have CONTAINER_SIZE metadata!");
+                    this.forceCloseContainer(currentContainer);
+                    return;
+                }
+            }
+
             final Position3f playerPosition = entityTracker.getClientPlayer().position();
             if (playerPosition.distanceTo(containerPosition) > 6) {
                 ViaBedrock.getPlatform().getLogger().log(Level.INFO, "Closing " + currentContainer.type() + " because player is too far away (" + playerPosition.distanceTo(containerPosition) + " > 6)");

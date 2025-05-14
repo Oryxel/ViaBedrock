@@ -20,12 +20,13 @@ package net.raphimc.viabedrock.api.model.container;
 import com.viaversion.viaversion.api.connection.UserConnection;
 import com.viaversion.viaversion.api.minecraft.BlockPosition;
 import com.viaversion.viaversion.libs.mcstructs.text.TextComponent;
+import net.raphimc.viabedrock.api.model.entity.Entity;
 import net.raphimc.viabedrock.protocol.data.enums.bedrock.ContainerType;
 
 public class ChestContainer extends Container {
 
-    public ChestContainer(final UserConnection user, final byte containerId, final TextComponent title, final BlockPosition position, final int size) {
-        super(user, containerId, ContainerType.CONTAINER, title, position, size, "chest", "trapped_chest");
+    public ChestContainer(final UserConnection user, final byte containerId, final TextComponent title, final BlockPosition position, final int size, final Entity attachedEntity) {
+        super(user, containerId, ContainerType.CONTAINER, title, position, size, attachedEntity, "chest", "trapped_chest");
     }
 
 }

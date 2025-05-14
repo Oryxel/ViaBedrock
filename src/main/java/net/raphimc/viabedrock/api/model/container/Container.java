@@ -22,6 +22,8 @@ import com.viaversion.viaversion.api.minecraft.BlockPosition;
 import com.viaversion.viaversion.api.minecraft.item.Item;
 import com.viaversion.viaversion.libs.mcstructs.text.TextComponent;
 import net.raphimc.viabedrock.ViaBedrock;
+import net.raphimc.viabedrock.api.model.entity.Entity;
+import net.raphimc.viabedrock.protocol.data.enums.bedrock.ActorDataIDs;
 import net.raphimc.viabedrock.protocol.data.enums.bedrock.ContainerType;
 import net.raphimc.viabedrock.protocol.data.enums.java.ClickType;
 import net.raphimc.viabedrock.protocol.model.BedrockItem;
@@ -40,18 +42,20 @@ public abstract class Container {
     protected final BlockPosition position;
     protected final BedrockItem[] items;
     protected final Set<String> validBlockTags;
+    protected final Entity attachedEntity;
 
-    public Container(final UserConnection user, final byte containerId, final ContainerType type, final TextComponent title, final BlockPosition position, final int size, final String... validBlockTags) {
+    public Container(final UserConnection user, final byte containerId, final ContainerType type, final TextComponent title, final BlockPosition position, final int size, Entity attachedEntity, final String... validBlockTags) {
         this.user = user;
         this.containerId = containerId;
         this.type = type;
         this.title = title;
         this.position = position;
         this.items = BedrockItem.emptyArray(size);
+        this.attachedEntity = attachedEntity;
         this.validBlockTags = Set.of(validBlockTags);
     }
 
-    protected Container(final UserConnection user, final byte containerId, final ContainerType type, final TextComponent title, final BlockPosition position, final BedrockItem[] items, final Set<String> validBlockTags) {
+    protected Container(final UserConnection user, final byte containerId, final ContainerType type, final TextComponent title, final BlockPosition position, final BedrockItem[] items, final Set<String> validBlockTags, Entity attachedEntity) {
         this.user = user;
         this.containerId = containerId;
         this.type = type;
@@ -59,6 +63,7 @@ public abstract class Container {
         this.position = position;
         this.items = items;
         this.validBlockTags = validBlockTags;
+        this.attachedEntity = attachedEntity;
     }
 
     public boolean handleClick(final int revision, final short slot, final byte button, final ClickType action) {
@@ -139,12 +144,20 @@ public abstract class Container {
         return this.position;
     }
 
+    public Entity attachedEntity() {
+        return attachedEntity;
+    }
+
     public boolean isValidBlockTag(final String tag) {
         if (tag == null) {
             return false;
         } else {
             return this.validBlockTags.contains(tag);
         }
+    }
+
+    public boolean isValidEntity() {
+        return this.attachedEntity.entityData().containsKey(ActorDataIDs.CONTAINER_SIZE);
     }
 
     protected void onSlotChanged(final int slot, final BedrockItem oldItem, final BedrockItem newItem) {
