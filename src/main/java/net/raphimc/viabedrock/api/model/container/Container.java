@@ -23,11 +23,9 @@ import com.viaversion.viaversion.api.minecraft.item.Item;
 import com.viaversion.viaversion.api.protocol.packet.PacketWrapper;
 import com.viaversion.viaversion.api.type.Type;
 import com.viaversion.viaversion.libs.mcstructs.text.TextComponent;
-import com.viaversion.viaversion.protocols.v1_21_4to1_21_5.Protocol1_21_4To1_21_5;
-import com.viaversion.viaversion.protocols.v1_21_4to1_21_5.packet.ClientboundPackets1_21_5;
 import net.raphimc.viabedrock.ViaBedrock;
+import net.raphimc.viabedrock.api.model.container.player.InventoryContainer;
 import net.raphimc.viabedrock.api.model.entity.Entity;
-import net.raphimc.viabedrock.protocol.BedrockProtocol;
 import net.raphimc.viabedrock.protocol.ServerboundBedrockPackets;
 import net.raphimc.viabedrock.protocol.data.enums.bedrock.*;
 import net.raphimc.viabedrock.protocol.data.enums.java.ClickType;
@@ -86,6 +84,9 @@ public abstract class Container {
             wrapper.write(BedrockTypes.VAR_INT, 0); // legacy request id
             wrapper.write(BedrockTypes.UNSIGNED_VAR_INT, ComplexInventoryTransaction_Type.NormalTransaction.getValue()); // transaction type
 
+            // Seems to be the case, server expect us to send back id 0 despite whatever id server send to us.
+            final int containerId = this instanceof InventoryContainer ? ContainerID.CONTAINER_ID_INVENTORY.getValue() : this.containerId();
+
             final int bedrockSlot = this.bedrockSlot(slot);
 
             final List<InventoryAction> actions = new ArrayList<>();
@@ -143,6 +144,7 @@ public abstract class Container {
                                         new InventorySource(InventorySourceType.ContainerInventory, containerId, InventorySource_InventorySourceFlags.NoFlag),
                                         bedrockSlot, clickedItem, toSlotItem
                                 ));
+                                System.out.println("Slot: " + bedrockSlot + " containerId= " + containerId);
 
                                 this.setItem(bedrockSlot, toSlotItem);
                             }
@@ -178,7 +180,7 @@ public abstract class Container {
 
                                 // Remove/Split the item from the clicked slot.
                                 actions.add(new InventoryAction(
-                                        new InventorySource(InventorySourceType.ContainerInventory, this.containerId, InventorySource_InventorySourceFlags.NoFlag),
+                                        new InventorySource(InventorySourceType.ContainerInventory, containerId, InventorySource_InventorySourceFlags.NoFlag),
                                         bedrockSlot, clickedItem, toSlotItem
                                 ));
 
