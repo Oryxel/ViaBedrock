@@ -32,4 +32,8 @@ public class ArmorContainer extends InventorySubContainer {
         return 5 + slot;
     }
 
+    @Override
+    public int bedrockSlot(int slot) {
+        return slot - 5;
+    }
 }

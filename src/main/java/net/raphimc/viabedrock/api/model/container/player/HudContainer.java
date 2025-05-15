@@ -46,4 +46,13 @@ public class HudContainer extends InventoryRedirectContainer {
         }
     }
 
+    @Override
+    public int bedrockSlot(final int slot) {
+        int tempSlot = slot + 27;
+        if (tempSlot >= 28 && tempSlot <= 31) {
+            return tempSlot;
+        } else {
+            return super.bedrockSlot(slot);
+        }
+    }
 }

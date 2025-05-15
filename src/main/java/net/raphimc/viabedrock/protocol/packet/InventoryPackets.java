@@ -271,7 +271,7 @@ public class InventoryPackets {
                 wrapper.cancel();
                 return;
             }
-            final Container container = inventoryTracker.getContainerServerbound((byte) containerId);
+            Container container = inventoryTracker.getContainerServerbound((byte) containerId);
             if (container == null) {
                 if (containerId == ContainerID.CONTAINER_ID_INVENTORY.getValue()) {
                     // Bedrock client can send multiple OpenInventory requests if the server doesn't respond, so this is fine here
@@ -283,11 +283,15 @@ public class InventoryPackets {
                 }
 
                 wrapper.cancel();
+
+                // If inventory is server authoritative, we have to wait for server to approve our open inventory request.
                 if (gameSessionStorage.isInventoryServerAuthoritative()) {
                     return;
+                } else {
+                    container = inventoryTracker.getInventoryContainer();
                 }
             }
-            if (!container.handleClick(revision, slot, button, action)) {
+            if (!container.handleClick(wrapper, revision, slot, button, action)) {
                 if (container.type() != ContainerType.INVENTORY) {
                     PacketFactory.sendJavaContainerSetContent(wrapper.user(), inventoryTracker.getInventoryContainer());
                 }

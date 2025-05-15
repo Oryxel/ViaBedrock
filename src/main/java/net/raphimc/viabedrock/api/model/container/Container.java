@@ -23,17 +23,20 @@ import com.viaversion.viaversion.api.minecraft.item.Item;
 import com.viaversion.viaversion.api.protocol.packet.PacketWrapper;
 import com.viaversion.viaversion.api.type.Type;
 import com.viaversion.viaversion.libs.mcstructs.text.TextComponent;
+import com.viaversion.viaversion.protocols.v1_21_4to1_21_5.Protocol1_21_4To1_21_5;
+import com.viaversion.viaversion.protocols.v1_21_4to1_21_5.packet.ClientboundPackets1_21_5;
 import net.raphimc.viabedrock.ViaBedrock;
 import net.raphimc.viabedrock.api.model.entity.Entity;
+import net.raphimc.viabedrock.protocol.BedrockProtocol;
 import net.raphimc.viabedrock.protocol.ServerboundBedrockPackets;
-import net.raphimc.viabedrock.protocol.data.enums.bedrock.ActorDataIDs;
-import net.raphimc.viabedrock.protocol.data.enums.bedrock.ComplexInventoryTransaction_Type;
-import net.raphimc.viabedrock.protocol.data.enums.bedrock.ContainerType;
+import net.raphimc.viabedrock.protocol.data.enums.bedrock.*;
 import net.raphimc.viabedrock.protocol.data.enums.java.ClickType;
 import net.raphimc.viabedrock.protocol.model.BedrockItem;
 import net.raphimc.viabedrock.protocol.model.InventoryAction;
+import net.raphimc.viabedrock.protocol.model.InventorySource;
 import net.raphimc.viabedrock.protocol.rewriter.ItemRewriter;
 import net.raphimc.viabedrock.protocol.storage.GameSessionStorage;
+import net.raphimc.viabedrock.protocol.storage.InventoryTracker;
 import net.raphimc.viabedrock.protocol.types.BedrockTypes;
 
 import java.util.ArrayList;
@@ -75,11 +78,15 @@ public abstract class Container {
         this.attachedEntity = attachedEntity;
     }
 
-    public boolean handleClick(final int revision, final short slot, final byte button, final ClickType action) {
+    public boolean handleClick(PacketWrapper wrapper, final int revision, final short slot, final byte button, final ClickType action) {
+        final InventoryTracker inventoryTracker = this.user.get(InventoryTracker.class);
+
         if (!user.get(GameSessionStorage.class).isInventoryServerAuthoritative()) {
-            final PacketWrapper wrapper = PacketWrapper.create(ServerboundBedrockPackets.INVENTORY_TRANSACTION, this.user);
+            wrapper.setPacketType(ServerboundBedrockPackets.INVENTORY_TRANSACTION);
             wrapper.write(BedrockTypes.VAR_INT, 0); // legacy request id
             wrapper.write(BedrockTypes.UNSIGNED_VAR_INT, ComplexInventoryTransaction_Type.NormalTransaction.getValue()); // transaction type
+
+            final int bedrockSlot = this.bedrockSlot(slot);
 
             final List<InventoryAction> actions = new ArrayList<>();
             switch (action) {
@@ -88,11 +95,108 @@ public abstract class Container {
                         return false;
                     }
 
-                    // Drop item outside of inventory.
-                    if (slot == -999) {
+                    if (slot == -999) { // Drop item outside of inventory.
 
+                    } else if (slot >= 0) {
+                        if (slot >= this.items.length) {
+                            ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "Tried to translate container click but slot was out of bounds (" + slot + ")");
+                            return false;
+                        }
+                        BedrockItem clickedItem = this.getItem(slot);
+                        BedrockItem cursorItem = inventoryTracker.getHudContainer().getItem(0);
+                        if (clickedItem.isEmpty()) {
+                            if (!cursorItem.isEmpty()) {
+                                // TODO: Bundle item.
+//                                if (cursor.getItem() instanceof BundleItem && cursor.has(DataComponents.BUNDLE_CONTENTS) && packet.buttonNum() != 0) {
+//                                    action = cursor.get(DataComponents.BUNDLE_CONTENTS).isEmpty() ? InventoryAction.NOTHING : InventoryAction.PLACE_FROM_BUNDLE;
+//                                    break;
+//                                }
+
+                                BedrockItem toCursorItem;
+                                if (button == 0) {
+                                    toCursorItem = BedrockItem.empty();
+                                } else {
+                                    if (cursorItem.amount() - 1 == 0) {
+                                        toCursorItem = BedrockItem.empty();
+                                    } else {
+                                        toCursorItem = cursorItem.copy();
+                                        toCursorItem.setAmount(toCursorItem.amount() - 1);
+                                    }
+                                }
+
+                                // Set item!
+                                inventoryTracker.getHudContainer().setItem(0, toCursorItem);
+
+                                // Remove the item from cursor.
+                                actions.add(new InventoryAction(
+                                        new InventorySource(InventorySourceType.ContainerInventory, ContainerID.CONTAINER_ID_PLAYER_ONLY_UI.getValue(), InventorySource_InventorySourceFlags.NoFlag),
+                                        0, cursorItem, toCursorItem
+                                ));
+
+                                BedrockItem toSlotItem = cursorItem.copy();
+                                if (button == 1) {
+                                    toSlotItem.setAmount(1);
+                                }
+
+                                // And add the item into the slot
+                                actions.add(new InventoryAction(
+                                        new InventorySource(InventorySourceType.ContainerInventory, containerId, InventorySource_InventorySourceFlags.NoFlag),
+                                        bedrockSlot, clickedItem, toSlotItem
+                                ));
+
+                                this.setItem(bedrockSlot, toSlotItem);
+                            }
+                        } else {
+//                            if (!slot.mayPickup(this.player)) break; This isn't needed since if player don't pick up anything they won't send anything I think?
+                            if (cursorItem.isEmpty()) {
+                                // TODO: again, bundle
+//                                if (slot.getItem().getItem() instanceof BundleItem && slot.getItem().has(DataComponents.BUNDLE_CONTENTS) && packet.buttonNum() != 0) {
+//                                    action = slot.getItem().get(DataComponents.BUNDLE_CONTENTS).isEmpty() ? InventoryAction.NOTHING : InventoryAction.PICKUP_FROM_BUNDLE;
+//                                    break;
+//                                }
+
+                                int pickupAmount;
+                                BedrockItem toSlotItem;
+                                if (button == 0) {
+                                    toSlotItem = BedrockItem.empty();
+                                    pickupAmount = clickedItem.amount();
+                                } else {
+                                    toSlotItem = clickedItem.copy();
+                                    int amount = clickedItem.amount();
+                                    if (amount / 2 == 0) {
+                                        toSlotItem = BedrockItem.empty();
+                                        pickupAmount = amount;
+                                    }else if (amount % 2 == 0) {
+                                        toSlotItem.setAmount(amount / 2);
+                                        pickupAmount = amount / 2;
+                                    } else {
+                                        int split = amount / 2;
+                                        toSlotItem.setAmount(split);
+                                        pickupAmount = amount - split;
+                                    }
+                                }
+
+                                // Remove/Split the item from the clicked slot.
+                                actions.add(new InventoryAction(
+                                        new InventorySource(InventorySourceType.ContainerInventory, containerId, InventorySource_InventorySourceFlags.NoFlag),
+                                        bedrockSlot, clickedItem, toSlotItem
+                                ));
+
+                                this.setItem(bedrockSlot, toSlotItem);
+
+                                BedrockItem toCursorItem = clickedItem.copy();
+                                toCursorItem.setAmount(pickupAmount);
+
+                                actions.add(new InventoryAction(
+                                        new InventorySource(InventorySourceType.ContainerInventory, ContainerID.CONTAINER_ID_PLAYER_ONLY_UI.getValue(), InventorySource_InventorySourceFlags.NoFlag),
+                                        0, cursorItem, toCursorItem
+                                ));
+
+                                inventoryTracker.getHudContainer().setItem(0, toCursorItem);
+                            }
+                        }
                     } else {
-
+                        return false;
                     }
                 }
             }
@@ -110,6 +214,8 @@ public abstract class Container {
                 wrapper.write(bedrockItemType, inventoryAction.from());
                 wrapper.write(bedrockItemType, inventoryAction.to());
             }
+
+            wrapper.setCancelled(false);
         }
 
         return false;
@@ -162,6 +268,10 @@ public abstract class Container {
     }
 
     public int javaSlot(final int slot) {
+        return slot;
+    }
+
+    public int bedrockSlot(final int slot) {
         return slot;
     }
 

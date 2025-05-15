@@ -85,6 +85,16 @@ public class BundleContainer extends Container {
     }
 
     @Override
+    public int bedrockSlot(int slot) {
+        final Pair<Container, Integer> holdingContainer = this.findHoldingContainer();
+        if (holdingContainer == null) {
+            throw new IllegalStateException("Could not find bundle in any container");
+        }
+
+        return holdingContainer.key().bedrockSlot(holdingContainer.value());
+    }
+
+    @Override
     public byte javaContainerId() {
         final Pair<Container, Integer> holdingContainer = this.findHoldingContainer();
         if (holdingContainer == null) {
