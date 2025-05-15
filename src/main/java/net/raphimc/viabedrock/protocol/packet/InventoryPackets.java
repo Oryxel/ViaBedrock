@@ -49,10 +49,7 @@ import net.raphimc.viabedrock.protocol.model.BedrockItem;
 import net.raphimc.viabedrock.protocol.model.FullContainerName;
 import net.raphimc.viabedrock.protocol.rewriter.BlockStateRewriter;
 import net.raphimc.viabedrock.protocol.rewriter.ItemRewriter;
-import net.raphimc.viabedrock.protocol.storage.ChunkTracker;
-import net.raphimc.viabedrock.protocol.storage.EntityTracker;
-import net.raphimc.viabedrock.protocol.storage.InventoryTracker;
-import net.raphimc.viabedrock.protocol.storage.ResourcePacksStorage;
+import net.raphimc.viabedrock.protocol.storage.*;
 import net.raphimc.viabedrock.protocol.types.BedrockTypes;
 
 import java.util.logging.Level;
@@ -269,6 +266,7 @@ public class InventoryPackets {
             final ClickType action = ClickType.values()[wrapper.read(Types.VAR_INT)]; // action
 
             final InventoryTracker inventoryTracker = wrapper.user().get(InventoryTracker.class);
+            final GameSessionStorage gameSessionStorage = wrapper.user().get(GameSessionStorage.class);
             if (inventoryTracker.getPendingCloseContainer() != null) {
                 wrapper.cancel();
                 return;
@@ -285,7 +283,9 @@ public class InventoryPackets {
                 }
 
                 wrapper.cancel();
-                return;
+                if (gameSessionStorage.isInventoryServerAuthoritative()) {
+                    return;
+                }
             }
             if (!container.handleClick(revision, slot, button, action)) {
                 if (container.type() != ContainerType.INVENTORY) {

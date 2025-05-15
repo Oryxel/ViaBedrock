@@ -20,17 +20,25 @@ package net.raphimc.viabedrock.api.model.container;
 import com.viaversion.viaversion.api.connection.UserConnection;
 import com.viaversion.viaversion.api.minecraft.BlockPosition;
 import com.viaversion.viaversion.api.minecraft.item.Item;
+import com.viaversion.viaversion.api.protocol.packet.PacketWrapper;
+import com.viaversion.viaversion.api.type.Type;
 import com.viaversion.viaversion.libs.mcstructs.text.TextComponent;
 import net.raphimc.viabedrock.ViaBedrock;
 import net.raphimc.viabedrock.api.model.entity.Entity;
+import net.raphimc.viabedrock.protocol.ServerboundBedrockPackets;
 import net.raphimc.viabedrock.protocol.data.enums.bedrock.ActorDataIDs;
+import net.raphimc.viabedrock.protocol.data.enums.bedrock.ComplexInventoryTransaction_Type;
 import net.raphimc.viabedrock.protocol.data.enums.bedrock.ContainerType;
 import net.raphimc.viabedrock.protocol.data.enums.java.ClickType;
 import net.raphimc.viabedrock.protocol.model.BedrockItem;
+import net.raphimc.viabedrock.protocol.model.InventoryAction;
 import net.raphimc.viabedrock.protocol.rewriter.ItemRewriter;
 import net.raphimc.viabedrock.protocol.storage.GameSessionStorage;
+import net.raphimc.viabedrock.protocol.types.BedrockTypes;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 
@@ -69,7 +77,39 @@ public abstract class Container {
 
     public boolean handleClick(final int revision, final short slot, final byte button, final ClickType action) {
         if (!user.get(GameSessionStorage.class).isInventoryServerAuthoritative()) {
+            final PacketWrapper wrapper = PacketWrapper.create(ServerboundBedrockPackets.INVENTORY_TRANSACTION, this.user);
+            wrapper.write(BedrockTypes.VAR_INT, 0); // legacy request id
+            wrapper.write(BedrockTypes.UNSIGNED_VAR_INT, ComplexInventoryTransaction_Type.NormalTransaction.getValue()); // transaction type
 
+            final List<InventoryAction> actions = new ArrayList<>();
+            switch (action) {
+                case PICKUP -> {
+                    if (button < 0 || button > 1) {
+                        return false;
+                    }
+
+                    // Drop item outside of inventory.
+                    if (slot == -999) {
+
+                    } else {
+
+                    }
+                }
+            }
+
+            if (actions.isEmpty()) {
+                return false;
+            }
+
+            Type<BedrockItem> bedrockItemType = wrapper.user().get(ItemRewriter.class).itemType();
+
+            wrapper.write(BedrockTypes.UNSIGNED_VAR_INT, actions.size()); // actions count
+            for (InventoryAction inventoryAction : actions) {
+                wrapper.write(BedrockTypes.INVENTORY_SOURCE, inventoryAction.source()); // inventory source
+                wrapper.write(BedrockTypes.UNSIGNED_VAR_INT, inventoryAction.slot());
+                wrapper.write(bedrockItemType, inventoryAction.from());
+                wrapper.write(bedrockItemType, inventoryAction.to());
+            }
         }
 
         return false;
