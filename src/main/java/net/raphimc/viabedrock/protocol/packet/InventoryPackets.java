@@ -88,28 +88,30 @@ public class InventoryPackets {
             }
 
             final Entity attachedEntity = entityTracker.getEntityByUid(uniqueEntityId);
-            if (uniqueEntityId != -1 && attachedEntity == null) {
-                ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "Server tried to open container with an invalid entity id.");
-                wrapper.cancel();
-                return;
-            }
-
-            if (attachedEntity != null) {
-                if (!attachedEntity.entityData().containsKey(ActorDataIDs.CONTAINER_SIZE)) {
-                    ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "Server tried to open container with an entity that doesn't have CONTAINER_SIZE metadata!");
+            if (type != ContainerType.INVENTORY) {
+                if (uniqueEntityId != -1 && attachedEntity == null) {
+                    ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "Server tried to open container with an invalid entity id.");
                     wrapper.cancel();
                     return;
                 }
 
-                if (attachedEntity.entityData().containsKey(ActorDataIDs.NAME)) {
-                    title = TextUtil.stringToTextComponent(wrapper.user().get(ResourcePacksStorage.class).getTexts().translate(attachedEntity.entityData().get(ActorDataIDs.NAME).value()));
+                if (attachedEntity != null) {
+                    if (!attachedEntity.entityData().containsKey(ActorDataIDs.CONTAINER_SIZE)) {
+                        ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "Server tried to open container with an entity that doesn't have CONTAINER_SIZE metadata!");
+                        wrapper.cancel();
+                        return;
+                    }
+
+                    if (attachedEntity.entityData().containsKey(ActorDataIDs.NAME)) {
+                        title = TextUtil.stringToTextComponent(wrapper.user().get(ResourcePacksStorage.class).getTexts().translate(attachedEntity.entityData().get(ActorDataIDs.NAME).value()));
+                    }
                 }
             }
 
             final Container container;
             switch (type) {
                 case INVENTORY -> {
-                    inventoryTracker.setCurrentContainer(new InventoryContainer(wrapper.user(), containerId, position, inventoryTracker.getInventoryContainer(), attachedEntity));
+                    inventoryTracker.setCurrentContainer(new InventoryContainer(wrapper.user(), containerId, position, inventoryTracker.getInventoryContainer()));
                     wrapper.cancel();
                     return;
                 }

@@ -28,6 +28,7 @@ import net.raphimc.viabedrock.protocol.data.enums.bedrock.ContainerType;
 import net.raphimc.viabedrock.protocol.data.enums.java.ClickType;
 import net.raphimc.viabedrock.protocol.model.BedrockItem;
 import net.raphimc.viabedrock.protocol.rewriter.ItemRewriter;
+import net.raphimc.viabedrock.protocol.storage.GameSessionStorage;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -67,6 +68,10 @@ public abstract class Container {
     }
 
     public boolean handleClick(final int revision, final short slot, final byte button, final ClickType action) {
+        if (!user.get(GameSessionStorage.class).isInventoryServerAuthoritative()) {
+
+        }
+
         return false;
     }
 
