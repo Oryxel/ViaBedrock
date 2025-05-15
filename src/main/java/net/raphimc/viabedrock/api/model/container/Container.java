@@ -124,14 +124,14 @@ public abstract class Container {
                                     }
                                 }
 
-                                // Set item!
-                                inventoryTracker.getHudContainer().setItem(0, toCursorItem);
-
                                 // Remove the item from cursor.
                                 actions.add(new InventoryAction(
                                         new InventorySource(InventorySourceType.ContainerInventory, ContainerID.CONTAINER_ID_PLAYER_ONLY_UI.getValue(), InventorySource_InventorySourceFlags.NoFlag),
                                         0, cursorItem, toCursorItem
                                 ));
+
+                                // Set item!
+                                inventoryTracker.getHudContainer().setItem(0, toCursorItem);
 
                                 BedrockItem toSlotItem = cursorItem.copy();
                                 if (button == 1) {
@@ -178,7 +178,7 @@ public abstract class Container {
 
                                 // Remove/Split the item from the clicked slot.
                                 actions.add(new InventoryAction(
-                                        new InventorySource(InventorySourceType.ContainerInventory, containerId, InventorySource_InventorySourceFlags.NoFlag),
+                                        new InventorySource(InventorySourceType.ContainerInventory, this.containerId, InventorySource_InventorySourceFlags.NoFlag),
                                         bedrockSlot, clickedItem, toSlotItem
                                 ));
 
@@ -216,6 +216,7 @@ public abstract class Container {
             }
 
             wrapper.setCancelled(false);
+            return true;
         }
 
         return false;
