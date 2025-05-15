@@ -98,11 +98,11 @@ public abstract class Container {
                     if (slot == -999) { // Drop item outside of inventory.
 
                     } else if (slot >= 0) {
-                        if (slot >= this.items.length) {
-                            ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "Tried to translate container click but slot was out of bounds (" + slot + ")");
+                        if (bedrockSlot >= this.items.length) {
+                            ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "Tried to translate container click but slot was out of bounds (" + bedrockSlot + ")");
                             return false;
                         }
-                        BedrockItem clickedItem = this.getItem(slot);
+                        BedrockItem clickedItem = this.getItem(bedrockSlot);
                         BedrockItem cursorItem = inventoryTracker.getHudContainer().getItem(0);
                         if (clickedItem.isEmpty()) {
                             if (!cursorItem.isEmpty()) {
