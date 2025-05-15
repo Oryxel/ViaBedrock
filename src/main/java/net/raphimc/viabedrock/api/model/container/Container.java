@@ -76,7 +76,7 @@ public abstract class Container implements ContainerAction {
         this.attachedEntity = attachedEntity;
     }
 
-    public boolean handleClick(PacketWrapper wrapper, final int revision, final short slot, final byte button, final ClickType action) {
+    public boolean handleClick(PacketWrapper wrapper, final List<AffectedSlot> slots, final int revision, final short slot, final byte button, final ClickType action) {
         if (user.get(GameSessionStorage.class).isInventoryServerAuthoritative()) {
             return false;
         }

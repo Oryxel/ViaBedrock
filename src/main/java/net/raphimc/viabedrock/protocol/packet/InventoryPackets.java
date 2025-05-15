@@ -28,10 +28,12 @@ import com.viaversion.viaversion.libs.mcstructs.text.TextComponent;
 import com.viaversion.viaversion.libs.mcstructs.text.components.TranslationComponent;
 import com.viaversion.viaversion.protocols.v1_21_4to1_21_5.packet.ClientboundPackets1_21_5;
 import com.viaversion.viaversion.protocols.v1_21_4to1_21_5.packet.ServerboundPackets1_21_5;
+import com.viaversion.viaversion.util.Limit;
 import net.lenni0451.mcstructs_bedrock.forms.Form;
 import net.lenni0451.mcstructs_bedrock.forms.serializer.FormSerializer;
 import net.raphimc.viabedrock.ViaBedrock;
 import net.raphimc.viabedrock.api.chunk.BedrockBlockEntity;
+import net.raphimc.viabedrock.api.model.container.AffectedSlot;
 import net.raphimc.viabedrock.api.model.container.ChestContainer;
 import net.raphimc.viabedrock.api.model.container.Container;
 import net.raphimc.viabedrock.api.model.container.fake.FakeContainer;
@@ -52,6 +54,9 @@ import net.raphimc.viabedrock.protocol.rewriter.ItemRewriter;
 import net.raphimc.viabedrock.protocol.storage.*;
 import net.raphimc.viabedrock.protocol.types.BedrockTypes;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Level;
 
 public class InventoryPackets {
@@ -265,6 +270,12 @@ public class InventoryPackets {
             final byte button = wrapper.read(Types.BYTE); // button
             final ClickType action = ClickType.values()[wrapper.read(Types.VAR_INT)]; // action
 
+            List<AffectedSlot> affectedSlotList = new ArrayList<>();
+            final int affectedItems = Limit.max(wrapper.read(Types.VAR_INT), 128);
+            for (int i = 0; i < affectedItems; i++) {
+                affectedSlotList.add(new AffectedSlot(wrapper.read(Types.SHORT), wrapper.read(Types.HASHED_ITEM)));
+            }
+
             final InventoryTracker inventoryTracker = wrapper.user().get(InventoryTracker.class);
             final GameSessionStorage gameSessionStorage = wrapper.user().get(GameSessionStorage.class);
             if (inventoryTracker.getPendingCloseContainer() != null) {
@@ -291,7 +302,7 @@ public class InventoryPackets {
                     container = inventoryTracker.getInventoryContainer();
                 }
             }
-            if (!container.handleClick(wrapper, revision, slot, button, action)) {
+            if (!container.handleClick(wrapper, affectedSlotList, revision, slot, button, action)) {
                 if (container.type() != ContainerType.INVENTORY) {
                     PacketFactory.sendJavaContainerSetContent(wrapper.user(), inventoryTracker.getInventoryContainer());
                 }

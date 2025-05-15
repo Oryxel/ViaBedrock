@@ -33,6 +33,7 @@ import net.lenni0451.mcstructs_bedrock.forms.types.ActionForm;
 import net.lenni0451.mcstructs_bedrock.forms.types.CustomForm;
 import net.lenni0451.mcstructs_bedrock.forms.types.ModalForm;
 import net.lenni0451.mcstructs_bedrock.text.utils.BedrockTextUtils;
+import net.raphimc.viabedrock.api.model.container.AffectedSlot;
 import net.raphimc.viabedrock.api.util.MathUtil;
 import net.raphimc.viabedrock.api.util.TextUtil;
 import net.raphimc.viabedrock.protocol.BedrockProtocol;
@@ -68,7 +69,7 @@ public class FormContainer extends FakeContainer {
     }
 
     @Override
-    public boolean handleClick(PacketWrapper wrapper, final int revision, short slot, final byte button, final ClickType action) {
+    public boolean handleClick(PacketWrapper wrapper, final List<AffectedSlot> slots, final int revision, short slot, final byte button, final ClickType action) {
         if (action != ClickType.PICKUP) return false;
         if (slot >= SIZE) return false;
 
