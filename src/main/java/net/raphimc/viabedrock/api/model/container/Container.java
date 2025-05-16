@@ -108,6 +108,7 @@ public abstract class Container implements ContainerAction {
                         actions.add(new InventoryAction(new InventorySource(InventorySourceType.WorldInteraction, ContainerID.CONTAINER_ID_NONE.getValue(), InventorySource_InventorySourceFlags.NoFlag), 0, BedrockItem.empty(), cursorItem));
                     }
                 } else if (slot >= 0) {
+                    // TODO: Properly implement the rest of the stuff.
                     if (slots.isEmpty()) {
                         ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "Tried to translate container click pickup but there're not affected slots");
                         return false;
@@ -152,6 +153,39 @@ public abstract class Container implements ContainerAction {
                 } else {
                     return false;
                 }
+            }
+
+            // This behaviour isn't possible in bedrock so we're not translating this for now,
+            // of course most Bedrock anticheats won't mind, but I won't translate it just to be safe.
+            case SWAP -> {
+                return false;
+//                if (bedrockSlot >= this.items.length || slot < 0) {
+//                    ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "Tried to translate container click but slot was out of bounds (" + bedrockSlot + ")");
+//                    return false;
+//                }
+//
+//                if (button < 0 || button > 8 && button != 40) {
+//                    ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "Tried to translate container click swap action but button was out of bounds (" + button + ")");
+//                    return false;
+//                }
+//
+                 // Also this code likely wrong anyway.
+//                BedrockItem swappedItem = this.getItem(bedrockSlot);
+//                if (button == 40) {
+//                    BedrockItem offhandItem = inventoryTracker.getOffhandContainer().getItem(0);
+//                    inventoryTracker.getOffhandContainer().setItem(0, swappedItem);
+//                    this.setItem(bedrockSlot, offhandItem);
+//
+//                    actions.add(new InventoryAction(new InventorySource(InventorySourceType.ContainerInventory, ContainerID.CONTAINER_ID_OFFHAND.getValue(), InventorySource_InventorySourceFlags.NoFlag), 0, offhandItem, inventoryTracker.getOffhandContainer().getItem(0)));
+//                    actions.add(new InventoryAction(new InventorySource(InventorySourceType.ContainerInventory, containerId, InventorySource_InventorySourceFlags.NoFlag), bedrockSlot, swappedItem, this.getItem(bedrockSlot)));
+//                } else {
+//                    BedrockItem slotItem = inventoryTracker.getInventoryContainer().getItem(button);
+//                    inventoryTracker.getInventoryContainer().setItem(button, swappedItem);
+//                    this.setItem(bedrockSlot, slotItem);
+//
+//                    actions.add(new InventoryAction(new InventorySource(InventorySourceType.ContainerInventory, ContainerID.CONTAINER_ID_INVENTORY.getValue(), InventorySource_InventorySourceFlags.NoFlag), 0, slotItem, inventoryTracker.getInventoryContainer().getItem(button)));
+//                    actions.add(new InventoryAction(new InventorySource(InventorySourceType.ContainerInventory, containerId, InventorySource_InventorySourceFlags.NoFlag), bedrockSlot, swappedItem, this.getItem(bedrockSlot)));
+//                }
             }
         }
 

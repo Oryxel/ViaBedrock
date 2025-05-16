@@ -42,7 +42,7 @@ public class OffhandContainer extends InventorySubContainer {
 
     @Override
     public int bedrockSlot(int slot) {
-        return 40;
+        return 0;
     }
 
     @Override
