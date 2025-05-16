@@ -78,7 +78,7 @@ public abstract class Container implements ContainerAction {
     }
 
     public boolean handleClick(PacketWrapper wrapper, final List<AffectedSlot> slots, final int revision, final short slot, final byte button, final ClickType action, HashedItem carriedItem) {
-        if (user.get(GameSessionStorage.class).isInventoryServerAuthoritative() || slots.isEmpty() || carriedItem == null) {
+        if (user.get(GameSessionStorage.class).isInventoryServerAuthoritative()) {
             return false;
         }
 
@@ -100,9 +100,21 @@ public abstract class Container implements ContainerAction {
                     return false;
                 }
 
+                BedrockItem cursorItem = inventoryTracker.getHudContainer().getItem(0);
                 if (slot == -999) {
-
+                    if (button == 0) { // Drop the entire stack.
+                        inventoryTracker.getHudContainer().setItem(0, BedrockItem.empty());
+                        actions.add(new InventoryAction(new InventorySource(InventorySourceType.ContainerInventory, ContainerID.CONTAINER_ID_PLAYER_ONLY_UI.getValue(), InventorySource_InventorySourceFlags.NoFlag), 0, cursorItem, inventoryTracker.getHudContainer().getItem(0)));
+                        actions.add(new InventoryAction(new InventorySource(InventorySourceType.WorldInteraction, ContainerID.CONTAINER_ID_NONE.getValue(), InventorySource_InventorySourceFlags.NoFlag), 0, BedrockItem.empty(), cursorItem));
+                    }
                 } else if (slot >= 0) {
+                    if (slots.isEmpty()) {
+                        ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "Tried to translate container click pickup but there're not affected slots");
+                        return false;
+                    }
+
+                    BedrockItem clickedItem = this.getItem(bedrockSlot);
+
                     if (bedrockSlot >= this.items.length) {
                         ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "Tried to translate container click but slot was out of bounds (" + bedrockSlot + ")");
                         return false;
@@ -113,9 +125,6 @@ public abstract class Container implements ContainerAction {
                         ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "Requested slot (" + slot + ") doesn't match the slot from hashed slot list (" + affectedSlot.slot() + ")");
                         return false;
                     }
-
-                    BedrockItem clickedItem = this.getItem(bedrockSlot);
-                    BedrockItem cursorItem = inventoryTracker.getHudContainer().getItem(0);
 
                     BedrockItem newClickedItem = clickedItem.isEmpty() ? cursorItem.copy() : clickedItem.copy();
                     newClickedItem.setAmount(affectedSlot.item().amount());
