@@ -187,6 +187,38 @@ public abstract class Container implements ContainerAction {
 //                    actions.add(new InventoryAction(new InventorySource(InventorySourceType.ContainerInventory, containerId, InventorySource_InventorySourceFlags.NoFlag), bedrockSlot, swappedItem, this.getItem(bedrockSlot)));
 //                }
             }
+
+            case THROW -> {
+                if (bedrockSlot >= this.items.length || slot < 0) {
+                    ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "Tried to translate container click but slot was out of bounds (" + bedrockSlot + ")");
+                    return false;
+                }
+
+                BedrockItem thrownItem = this.getItem(bedrockSlot);
+                if (button == 0) {
+                    BedrockItem newThrownItem = thrownItem.copy();
+                    if (thrownItem.amount() - 1 <= 0) {
+                        this.setItem(bedrockSlot, BedrockItem.empty());
+                    } else {
+                        newThrownItem.setAmount(thrownItem.amount() - 1);
+                        this.setItem(bedrockSlot, newThrownItem);
+                    }
+
+                    actions.add(new InventoryAction(new InventorySource(InventorySourceType.ContainerInventory, containerId, InventorySource_InventorySourceFlags.NoFlag), bedrockSlot,
+                            thrownItem, this.getItem(bedrockSlot)));
+
+                    BedrockItem actualThrownItem = thrownItem.copy();
+                    actualThrownItem.setAmount(1);
+                    actions.add(new InventoryAction(new InventorySource(InventorySourceType.WorldInteraction, ContainerID.CONTAINER_ID_NONE.getValue(), InventorySource_InventorySourceFlags.NoFlag),
+                            0, BedrockItem.empty(), actualThrownItem));
+                } else if (button == 1) {
+                    this.setItem(bedrockSlot, BedrockItem.empty());
+                    actions.add(new InventoryAction(new InventorySource(InventorySourceType.ContainerInventory, containerId, InventorySource_InventorySourceFlags.NoFlag), bedrockSlot,
+                            thrownItem, BedrockItem.empty()));
+                    actions.add(new InventoryAction(new InventorySource(InventorySourceType.WorldInteraction, ContainerID.CONTAINER_ID_NONE.getValue(), InventorySource_InventorySourceFlags.NoFlag),
+                            0, BedrockItem.empty(), thrownItem));
+                }
+            }
         }
 
         if (actions.isEmpty()) {
