@@ -18,9 +18,4 @@
 package net.raphimc.viabedrock.api.model.container;
 
 public interface ContainerAction {
-    void take(ContainerClickData from, ContainerClickData to, int button);
-    void place(ContainerClickData from, ContainerClickData to, int button);
-
-    record ContainerClickData(Container container, int slot) {
-    }
 }

@@ -19,6 +19,7 @@ package net.raphimc.viabedrock.api.model.container;
 
 import com.viaversion.viaversion.api.connection.UserConnection;
 import com.viaversion.viaversion.api.minecraft.BlockPosition;
+import com.viaversion.viaversion.api.minecraft.item.HashedItem;
 import com.viaversion.viaversion.api.minecraft.item.Item;
 import com.viaversion.viaversion.api.protocol.packet.PacketWrapper;
 import com.viaversion.viaversion.api.type.Type;
@@ -76,8 +77,8 @@ public abstract class Container implements ContainerAction {
         this.attachedEntity = attachedEntity;
     }
 
-    public boolean handleClick(PacketWrapper wrapper, final List<AffectedSlot> slots, final int revision, final short slot, final byte button, final ClickType action) {
-        if (user.get(GameSessionStorage.class).isInventoryServerAuthoritative()) {
+    public boolean handleClick(PacketWrapper wrapper, final List<AffectedSlot> slots, final int revision, final short slot, final byte button, final ClickType action, HashedItem carriedItem) {
+        if (user.get(GameSessionStorage.class).isInventoryServerAuthoritative() || slots.isEmpty() || carriedItem == null) {
             return false;
         }
 
@@ -106,21 +107,38 @@ public abstract class Container implements ContainerAction {
                         ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "Tried to translate container click but slot was out of bounds (" + bedrockSlot + ")");
                         return false;
                     }
+
+                    AffectedSlot affectedSlot = slots.get(0);
+                    if (affectedSlot.slot() != slot) {
+                        ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "Requested slot (" + slot + ") doesn't match the slot from hashed slot list (" + affectedSlot.slot() + ")");
+                        return false;
+                    }
+
                     BedrockItem clickedItem = this.getItem(bedrockSlot);
                     BedrockItem cursorItem = inventoryTracker.getHudContainer().getItem(0);
-                    if (clickedItem.isEmpty()) {
-                        if (!cursorItem.isEmpty()) {
-                            this.place(new ContainerClickData(inventoryTracker.getHudContainer(), 0), new ContainerClickData(this, bedrockSlot), button);
-                            actions.add(new InventoryAction(new InventorySource(InventorySourceType.ContainerInventory, ContainerID.CONTAINER_ID_PLAYER_ONLY_UI.getValue(), InventorySource_InventorySourceFlags.NoFlag), 0, cursorItem, inventoryTracker.getHudContainer().getItem(0)));
-                            actions.add(new InventoryAction(new InventorySource(InventorySourceType.ContainerInventory, containerId, InventorySource_InventorySourceFlags.NoFlag), bedrockSlot, clickedItem, this.getItem(bedrockSlot)));
-                        }
-                    } else {
-                        if (cursorItem.isEmpty()) {
-                            this.take(new ContainerClickData(this, bedrockSlot), new ContainerClickData(inventoryTracker.getHudContainer(), 0), button);
 
-                            actions.add(new InventoryAction(new InventorySource(InventorySourceType.ContainerInventory, containerId, InventorySource_InventorySourceFlags.NoFlag), bedrockSlot, clickedItem, this.getItem(bedrockSlot)));
-                            actions.add(new InventoryAction(new InventorySource(InventorySourceType.ContainerInventory, ContainerID.CONTAINER_ID_PLAYER_ONLY_UI.getValue(), InventorySource_InventorySourceFlags.NoFlag), 0, cursorItem, inventoryTracker.getHudContainer().getItem(0)));
-                        }
+                    BedrockItem newClickedItem = clickedItem.isEmpty() ? cursorItem.copy() : clickedItem.copy();
+                    newClickedItem.setAmount(affectedSlot.item().amount());
+                    if (affectedSlot.item().isEmpty()) {
+                        newClickedItem = BedrockItem.empty();
+                    }
+
+                    this.setItem(bedrockSlot, newClickedItem);
+
+                    BedrockItem newCursorItem = cursorItem.isEmpty() ? clickedItem.copy() : cursorItem.copy();
+                    newCursorItem.setAmount(carriedItem.amount());
+                    if (carriedItem.isEmpty()) {
+                        newCursorItem = BedrockItem.empty();
+                    }
+
+                    inventoryTracker.getHudContainer().setItem(0, newCursorItem);
+
+                    if (clickedItem.isEmpty() && !cursorItem.isEmpty()) {
+                        actions.add(new InventoryAction(new InventorySource(InventorySourceType.ContainerInventory, ContainerID.CONTAINER_ID_PLAYER_ONLY_UI.getValue(), InventorySource_InventorySourceFlags.NoFlag), 0, cursorItem, inventoryTracker.getHudContainer().getItem(0)));
+                        actions.add(new InventoryAction(new InventorySource(InventorySourceType.ContainerInventory, containerId, InventorySource_InventorySourceFlags.NoFlag), bedrockSlot, clickedItem, this.getItem(bedrockSlot)));
+                    } else {
+                        actions.add(new InventoryAction(new InventorySource(InventorySourceType.ContainerInventory, containerId, InventorySource_InventorySourceFlags.NoFlag), bedrockSlot, clickedItem, this.getItem(bedrockSlot)));
+                        actions.add(new InventoryAction(new InventorySource(InventorySourceType.ContainerInventory, ContainerID.CONTAINER_ID_PLAYER_ONLY_UI.getValue(), InventorySource_InventorySourceFlags.NoFlag), 0, cursorItem, inventoryTracker.getHudContainer().getItem(0)));
                     }
                 } else {
                     return false;
@@ -144,64 +162,6 @@ public abstract class Container implements ContainerAction {
 
         wrapper.setCancelled(false);
         return true;
-    }
-
-    @Override
-    public void take(ContainerClickData from, ContainerClickData to, int button) {
-        // TODO: Bundle
-        final BedrockItem fromItem = from.container().getItem(from.slot());
-
-        int pickupAmount;
-        BedrockItem fromToItem;
-        if (button == 0) {
-            fromToItem = BedrockItem.empty();
-            pickupAmount = fromItem.amount();
-        } else {
-            fromToItem = fromItem.copy();
-            int amount = fromItem.amount();
-            if (amount / 2 == 0) {
-                fromToItem = BedrockItem.empty();
-                pickupAmount = amount;
-            }else if (amount % 2 == 0) {
-                fromToItem.setAmount(amount / 2);
-                pickupAmount = amount / 2;
-            } else {
-                int split = amount / 2;
-                fromToItem.setAmount(split);
-                pickupAmount = amount - split;
-            }
-        }
-        from.container().setItem(from.slot(), fromToItem);
-
-        BedrockItem toToItem = fromItem.copy();
-        fromItem.setAmount(pickupAmount);
-        to.container().setItem(to.slot(), toToItem);
-    }
-
-    @Override
-    public void place(ContainerClickData from, ContainerClickData to, int button) {
-        // TODO: Bundle
-        final BedrockItem fromItem = from.container().getItem(from.slot());
-
-        BedrockItem fromToItem;
-        if (button == 0) {
-            fromToItem = BedrockItem.empty();
-        } else {
-            if (fromItem.amount() - 1 == 0) {
-                fromToItem = BedrockItem.empty();
-            } else {
-                fromToItem = fromItem.copy();
-                fromToItem.setAmount(fromItem.amount() - 1);
-            }
-        }
-
-        from.container().setItem(from.slot(), fromToItem);
-
-        BedrockItem toItem = fromItem.copy();
-        if (button == 1) {
-            toItem.setAmount(1);
-        }
-        to.container().setItem(to.slot(), toItem);
     }
 
     public void clearItems() {

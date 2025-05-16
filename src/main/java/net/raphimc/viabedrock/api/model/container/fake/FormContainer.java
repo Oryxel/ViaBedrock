@@ -21,6 +21,7 @@ import com.viaversion.nbt.tag.Tag;
 import com.viaversion.viaversion.api.connection.UserConnection;
 import com.viaversion.viaversion.api.minecraft.data.StructuredDataContainer;
 import com.viaversion.viaversion.api.minecraft.data.StructuredDataKey;
+import com.viaversion.viaversion.api.minecraft.item.HashedItem;
 import com.viaversion.viaversion.api.minecraft.item.Item;
 import com.viaversion.viaversion.api.minecraft.item.StructuredItem;
 import com.viaversion.viaversion.api.protocol.packet.PacketWrapper;
@@ -69,7 +70,7 @@ public class FormContainer extends FakeContainer {
     }
 
     @Override
-    public boolean handleClick(PacketWrapper wrapper, final List<AffectedSlot> slots, final int revision, short slot, final byte button, final ClickType action) {
+    public boolean handleClick(PacketWrapper wrapper, final List<AffectedSlot> slots, final int revision, short slot, final byte button, final ClickType action, HashedItem carriedItem) {
         if (action != ClickType.PICKUP) return false;
         if (slot >= SIZE) return false;
 

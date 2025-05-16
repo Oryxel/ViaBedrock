@@ -302,7 +302,7 @@ public class InventoryPackets {
                     container = inventoryTracker.getInventoryContainer();
                 }
             }
-            if (!container.handleClick(wrapper, affectedSlotList, revision, slot, button, action)) {
+            if (!container.handleClick(wrapper, affectedSlotList, revision, slot, button, action, wrapper.read(Types.HASHED_ITEM))) {
                 if (container.type() != ContainerType.INVENTORY) {
                     PacketFactory.sendJavaContainerSetContent(wrapper.user(), inventoryTracker.getInventoryContainer());
                 }
