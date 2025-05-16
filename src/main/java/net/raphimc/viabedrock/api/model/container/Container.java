@@ -106,6 +106,19 @@ public abstract class Container implements ContainerAction {
                         inventoryTracker.getHudContainer().setItem(0, BedrockItem.empty());
                         actions.add(new InventoryAction(new InventorySource(InventorySourceType.ContainerInventory, ContainerID.CONTAINER_ID_PLAYER_ONLY_UI.getValue(), InventorySource_InventorySourceFlags.NoFlag), 0, cursorItem, inventoryTracker.getHudContainer().getItem(0)));
                         actions.add(new InventoryAction(new InventorySource(InventorySourceType.WorldInteraction, ContainerID.CONTAINER_ID_NONE.getValue(), InventorySource_InventorySourceFlags.NoFlag), 0, BedrockItem.empty(), cursorItem));
+                    } else {
+                        BedrockItem newCursorItem = cursorItem.copy();
+                        newCursorItem.setAmount(cursorItem.amount() - 1);
+                        if (newCursorItem.isEmpty()) {
+                            newCursorItem = BedrockItem.empty();
+                        }
+
+                        BedrockItem dropItem = cursorItem.copy();
+                        dropItem.setAmount(1);
+
+                        inventoryTracker.getHudContainer().setItem(0, newCursorItem);
+                        actions.add(new InventoryAction(new InventorySource(InventorySourceType.ContainerInventory, ContainerID.CONTAINER_ID_PLAYER_ONLY_UI.getValue(), InventorySource_InventorySourceFlags.NoFlag), 0, cursorItem, newCursorItem));
+                        actions.add(new InventoryAction(new InventorySource(InventorySourceType.WorldInteraction, ContainerID.CONTAINER_ID_NONE.getValue(), InventorySource_InventorySourceFlags.NoFlag), 0, BedrockItem.empty(), dropItem));
                     }
                 } else if (slot >= 0) {
                     // TODO: Properly implement the rest of the stuff.
